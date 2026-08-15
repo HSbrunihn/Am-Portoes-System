@@ -16,11 +16,17 @@ export class TaskService {
     this.tasks.push(task);
   }
 
-deleteTask(id: number): void {
-  const index = this.tasks.findIndex(task => task.id === id);
-  if (index !== -1) {
-    this.tasks.splice(index, 1);
+  deleteTask(id: number): void {
+    const index = this.tasks.findIndex(task => task.id === id);
+    if (index !== -1) {
+      this.tasks.splice(index, 1);
+    }
   }
-}
- 
+
+  updateTask(taskAtualizada: Task): void {
+    const index = this.tasks.findIndex(task => task.id === taskAtualizada.id);
+    if (index !== -1) {
+      this.tasks[index] = taskAtualizada;
+    }
+  }
 }

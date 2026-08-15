@@ -6,7 +6,7 @@ import { SummaryCard } from './components/summary-card/summary-card';
 import { Sidebar } from './components/sidebar/sidebar';
 import { Header } from './components/header/header';
 import { TaskService } from './services/task';
-
+import { Task } from './models/task.model';
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, TaskCard, TaskForm, SummaryCard, Sidebar, Header],
@@ -17,6 +17,7 @@ export class App {
   protected readonly title = signal('am-portoes-frontend');
   private taskService = inject(TaskService);
   protected readonly tasks = this.taskService.getTasks();
+  protected taskEmEdicao: Task | null = null;
 
   protected get emAndamento(): number {
     return this.tasks.filter(t => t.status === 'Em andamento').length;
@@ -36,5 +37,14 @@ export class App {
 
   protected onExcluirTask(id: number): void {
     this.taskService.deleteTask(id);
+
   }
+ protected onEditarTask(task: Task): void {
+  this.taskEmEdicao = task;
+}
+
+protected onFormConcluido(): void {
+  this.taskEmEdicao = null;
+}
+
 }
