@@ -15,4 +15,12 @@ export class TaskService {
   addTask(task: Task): void {
     this.tasks.push(task);
   }
+
+deleteTask(id: number): void {
+  const index = this.tasks.findIndex(task => task.id === id);
+  if (index !== -1) {
+    this.tasks.splice(index, 1);
+  }
+}
+ 
 }

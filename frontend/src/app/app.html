@@ -23,7 +23,8 @@
       <div class="row g-3">
         <div class="col-7">
           @for (task of tasks; track task.id) {
-            <app-task-card [task]="task"></app-task-card>
+          
+            <app-task-card [task]="task" (excluir)="onExcluirTask($event)"></app-task-card>
           }
         </div>
         <div class="col-5">

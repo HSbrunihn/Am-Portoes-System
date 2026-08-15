@@ -33,4 +33,8 @@ export class App {
   protected get altaPrioridade(): number {
     return this.tasks.filter(t => t.prioridade === 'Alta').length;
   }
+
+  protected onExcluirTask(id: number): void {
+    this.taskService.deleteTask(id);
+  }
 }
