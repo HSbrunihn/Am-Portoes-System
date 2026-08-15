@@ -10,9 +10,15 @@ export class TaskCard {
 
   @Input() task!: Task;
   @Output() excluir = new EventEmitter<number>();
+  @Output() editar = new EventEmitter<Task>();
+
 
   onExcluir(): void {
     this.excluir.emit(this.task.id)
+  }
+
+  onEditar(): void{
+    this.editar.emit(this.task);
   }
 
 }
