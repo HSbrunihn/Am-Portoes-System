@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-summary-card',
@@ -6,4 +6,8 @@ import { Component } from '@angular/core';
   templateUrl: './summary-card.html',
   styleUrl: './summary-card.scss',
 })
-export class SummaryCard {}
+export class SummaryCard {
+  @Input() titulo!: string;
+  @Input() quantidade!: number;
+  @Input() cor: string = 'primary';
+}
