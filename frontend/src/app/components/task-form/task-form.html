@@ -1,1 +1,36 @@
-<p>task-form works!</p>
+<form class="p-3">
+  <div class="mb-3">
+    <label class="form-label">Nome</label>
+    <input type="text" class="form-control" [(ngModel)]="novaTask.nome" name="nome">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Status</label>
+    <select class="form-select" [(ngModel)]="novaTask.status" name="status">
+      <option value="Em andamento">Em andamento</option>
+      <option value="Aguardando">Aguardando</option>
+      <option value="Concluída">Concluída</option>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Prioridade</label>
+    <select class="form-select" [(ngModel)]="novaTask.prioridade" name="prioridade">
+      <option value="Alta">Alta</option>
+      <option value="Média">Média</option>
+      <option value="Baixa">Baixa</option>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Valor (R$)</label>
+    <input type="number" class="form-control" [(ngModel)]="novaTask.valor" name="valor">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Descrição</label>
+    <textarea class="form-control" [(ngModel)]="novaTask.descricao" name="descricao"></textarea>
+  </div>
+
+  <button type="button" class="btn btn-primary" (click)="onSalvar()">Salvar</button>
+</form>

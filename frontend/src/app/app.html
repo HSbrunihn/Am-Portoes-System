@@ -5,6 +5,9 @@
     <app-header></app-header>
 
     <div class="p-4">
+
+      <app-task-form></app-task-form>
+
       @for (task of tasks; track task.id) {
         <app-task-card [task]="task"></app-task-card>
       }
