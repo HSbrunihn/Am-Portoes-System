@@ -1,11 +1,9 @@
-<div class="d-flex flex-column bg-dark text-white vh-100 p-3" style="width: 260px;">
+<div class="d-flex flex-column text-white vh-100 p-3" style="width: 260px; background-color: #0d2149;">
   <h4 class="mb-4">A&M Portões</h4>
 
   <nav class="nav flex-column gap-1">
-    <a class="nav-link text-white" href="#">Dashboard</a>
-    <a class="nav-link text-white-50" href="#">Em andamento</a>
-    <a class="nav-link text-white-50" href="#">Criar Tarefa</a>
-    <a class="nav-link text-white-50" href="#">Todas as Tarefas</a>
-    <a class="nav-link text-white-50" href="#">Por prioridade</a>
+    <a class="nav-link text-white" href="#" (click)="onClick('todas')">Dashboard</a>
+    <a class="nav-link text-white-50" href="#" (click)="onClick('todas')">Todas as Tarefas</a>
+    <a class="nav-link text-white-50" href="#" (click)="onClick('prioridade')">Por prioridade</a>
   </nav>
 </div>
