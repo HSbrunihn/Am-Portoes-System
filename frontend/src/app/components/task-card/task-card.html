@@ -1,9 +1,14 @@
 
 
-<div class="card">
-    <h5>{{task.nome}}</h5>
-    <p>{{task.descricao}}</p>
-    <span>{{task.status}}</span>
-    <span>{{task.prioridade}}</span>
-    <span>{{task.valor}}</span>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">{{task.nome}}</h5>
+        <p class="card-text">{{task.descricao}}</p>
+
+        <span class="badge bg-primary">{{task.status}}</span>
+        <span class="badge bg-warning">{{task.prioridade}}</span>
+
+        <p class="card-text"> R$ {{task.valor}}</p>
+    </div>
 </div>
