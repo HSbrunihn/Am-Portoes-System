@@ -7,9 +7,11 @@ import { Sidebar } from './components/sidebar/sidebar';
 import { Header } from './components/header/header';
 import { TaskService } from './services/task';
 import { Task } from './models/task.model';
+import { TaskDetail } from './components/task-detail/task-detail';
+
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, TaskCard, TaskForm, SummaryCard, Sidebar, Header],
+  imports: [RouterOutlet, TaskCard, TaskForm, SummaryCard, Sidebar, Header, TaskDetail],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -18,6 +20,10 @@ export class App {
   private taskService = inject(TaskService);
   protected readonly tasks = this.taskService.getTasks();
   protected taskEmEdicao: Task | null = null;
+  protected filtroAtivo: 'Todas' | 'Alta' | 'Média' | 'Baixa' = 'Todas';
+  protected taskEmDetalhe: Task | null = null;
+
+
 
   protected get emAndamento(): number {
     return this.tasks.filter(t => t.status === 'Em andamento').length;
@@ -45,6 +51,22 @@ export class App {
 
 protected onFormConcluido(): void {
   this.taskEmEdicao = null;
+}
+protected get tasksFiltradas(): Task[]{
+  if(this.filtroAtivo ==='Todas'){
+    return this.tasks;
+  }
+  return this.tasks.filter(t => t.prioridade === this.filtroAtivo);
+}
+protected setFiltro(prioridade:'Todas' | 'Alta' | 'Média' | 'Baixa'): void{
+  this.filtroAtivo = prioridade;
+}
+protected onVerDetalhes(task: Task): void {
+  this.taskEmDetalhe = task;
+}
+
+protected onFecharDetalhes(): void {
+  this.taskEmDetalhe = null;
 }
 
 }

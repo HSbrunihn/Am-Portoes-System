@@ -22,9 +22,17 @@
 
       <div class="row g-3">
         <div class="col-7">
-          @for (task of tasks; track task.id) {
+
+          <div class="btn-group mb-3">
+  <button class="btn btn-outline-secondary" [class.active]="filtroAtivo === 'Todas'" (click)="setFiltro('Todas')">Todas</button>
+  <button class="btn btn-outline-danger" [class.active]="filtroAtivo === 'Alta'" (click)="setFiltro('Alta')">Alta</button>
+  <button class="btn btn-outline-warning" [class.active]="filtroAtivo === 'Média'" (click)="setFiltro('Média')">Média</button>
+  <button class="btn btn-outline-success" [class.active]="filtroAtivo === 'Baixa'" (click)="setFiltro('Baixa')">Baixa</button>
+</div>
+
+          @for (task of tasksFiltradas; track task.id) {
           
-            <app-task-card [task]="task" (excluir)="onExcluirTask($event)" (editar)="onEditarTask($event)"></app-task-card>
+         <app-task-card [task]="task" (excluir)="onExcluirTask($event)" (editar)="onEditarTask($event)" (verDetalhes)="onVerDetalhes($event)"></app-task-card>
           }
         </div>
         <div class="col-5">
@@ -34,5 +42,5 @@
     </div>
   </div>
 </div>
-
+<app-task-detail [task]="taskEmDetalhe" (fechar)="onFecharDetalhes()"></app-task-detail>
 <router-outlet />
