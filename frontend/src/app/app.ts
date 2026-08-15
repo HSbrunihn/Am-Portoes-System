@@ -23,8 +23,6 @@ export class App {
   protected filtroAtivo: 'Todas' | 'Alta' | 'Média' | 'Baixa' = 'Todas';
   protected taskEmDetalhe: Task | null = null;
 
-
-
   protected get emAndamento(): number {
     return this.tasks.filter(t => t.status === 'Em andamento').length;
   }
@@ -41,32 +39,40 @@ export class App {
     return this.tasks.filter(t => t.prioridade === 'Alta').length;
   }
 
+  protected get tasksFiltradas(): Task[] {
+    if (this.filtroAtivo === 'Todas') {
+      return this.tasks;
+    }
+    return this.tasks.filter(t => t.prioridade === this.filtroAtivo);
+  }
+
+  protected setFiltro(prioridade: 'Todas' | 'Alta' | 'Média' | 'Baixa'): void {
+    this.filtroAtivo = prioridade;
+  }
+
   protected onExcluirTask(id: number): void {
     this.taskService.deleteTask(id);
-
   }
- protected onEditarTask(task: Task): void {
-  this.taskEmEdicao = task;
-}
 
-protected onFormConcluido(): void {
-  this.taskEmEdicao = null;
-}
-protected get tasksFiltradas(): Task[]{
-  if(this.filtroAtivo ==='Todas'){
-    return this.tasks;
+  protected onEditarTask(task: Task): void {
+    this.taskEmEdicao = task;
   }
-  return this.tasks.filter(t => t.prioridade === this.filtroAtivo);
-}
-protected setFiltro(prioridade:'Todas' | 'Alta' | 'Média' | 'Baixa'): void{
-  this.filtroAtivo = prioridade;
-}
-protected onVerDetalhes(task: Task): void {
-  this.taskEmDetalhe = task;
-}
 
-protected onFecharDetalhes(): void {
-  this.taskEmDetalhe = null;
-}
+  protected onFormConcluido(): void {
+    this.taskEmEdicao = null;
+  }
 
+  protected onVerDetalhes(task: Task): void {
+    this.taskEmDetalhe = task;
+  }
+
+  protected onFecharDetalhes(): void {
+    this.taskEmDetalhe = null;
+  }
+
+  protected onNavegar(secao: string): void {
+    if (secao === 'todas') {
+      this.filtroAtivo = 'Todas';
+    }
+  }
 }

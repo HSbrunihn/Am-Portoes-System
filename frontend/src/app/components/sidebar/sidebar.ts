@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-sidebar',
@@ -6,4 +6,11 @@ import { Component } from '@angular/core';
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
 })
-export class Sidebar {}
+export class Sidebar {
+  @Output() navegar = new EventEmitter<string>();
+
+  onClick(secao: string): void {
+    this.navegar.emit(secao);
+  }
+  
+}
