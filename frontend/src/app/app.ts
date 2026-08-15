@@ -1,20 +1,36 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TaskCard } from './components/task-card/task-card';
-import { TASKS_MOCK } from './mock-data/tasks.mock';
+import { TaskForm } from './components/task-form/task-form';
+import { SummaryCard } from './components/summary-card/summary-card';
 import { Sidebar } from './components/sidebar/sidebar';
 import { Header } from './components/header/header';
 import { TaskService } from './services/task';
-import { TaskForm } from './components/task-form/task-form';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, TaskCard,Sidebar,Header,TaskForm],
+  imports: [RouterOutlet, TaskCard, TaskForm, SummaryCard, Sidebar, Header],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
   protected readonly title = signal('am-portoes-frontend');
-  private tasksService = inject(TaskService);
-  protected readonly tasks = TASKS_MOCK;
+  private taskService = inject(TaskService);
+  protected readonly tasks = this.taskService.getTasks();
+
+  protected get emAndamento(): number {
+    return this.tasks.filter(t => t.status === 'Em andamento').length;
+  }
+
+  protected get concluidas(): number {
+    return this.tasks.filter(t => t.status === 'Concluída').length;
+  }
+
+  protected get aguardando(): number {
+    return this.tasks.filter(t => t.status === 'Aguardando').length;
+  }
+
+  protected get altaPrioridade(): number {
+    return this.tasks.filter(t => t.prioridade === 'Alta').length;
+  }
 }

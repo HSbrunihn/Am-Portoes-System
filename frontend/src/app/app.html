@@ -5,12 +5,31 @@
     <app-header></app-header>
 
     <div class="p-4">
+      <div class="row g-3 mb-4">
+        <div class="col-3">
+          <app-summary-card titulo="Em andamento" [quantidade]="emAndamento" cor="primary"></app-summary-card>
+        </div>
+        <div class="col-3">
+          <app-summary-card titulo="Concluídas" [quantidade]="concluidas" cor="success"></app-summary-card>
+        </div>
+        <div class="col-3">
+          <app-summary-card titulo="Aguardando" [quantidade]="aguardando" cor="warning"></app-summary-card>
+        </div>
+        <div class="col-3">
+          <app-summary-card titulo="Alta prioridade" [quantidade]="altaPrioridade" cor="danger"></app-summary-card>
+        </div>
+      </div>
 
-      <app-task-form></app-task-form>
-
-      @for (task of tasks; track task.id) {
-        <app-task-card [task]="task"></app-task-card>
-      }
+      <div class="row g-3">
+        <div class="col-7">
+          @for (task of tasks; track task.id) {
+            <app-task-card [task]="task"></app-task-card>
+          }
+        </div>
+        <div class="col-5">
+          <app-task-form></app-task-form>
+        </div>
+      </div>
     </div>
   </div>
 </div>
