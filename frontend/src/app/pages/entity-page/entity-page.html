@@ -1,0 +1,37 @@
+<section class="page">
+  <div class="top"><div><span>GESTÃO</span><h1>{{ title }}</h1><p>Consulte e mantenha os registros integrados à API.</p></div><button class="primary" (click)="newItem()">+ Novo registro</button></div>
+  @if (feedback()) { <div class="feedback">{{ feedback() }} <button (click)="feedback.set('')">×</button></div> }
+  @if (error()) { <div class="alert">{{ error() }} <button (click)="error.set('')">×</button></div> }
+  <div class="panel">
+    <label class="search">Pesquisar<input #q type="search" placeholder="Digite para filtrar…" (input)="search.set(q.value)" /></label>
+    @if (loading()) { <div class="state">Carregando registros…</div> }
+    @else if (filtered().length === 0) { <div class="state"><b>Nenhum registro encontrado</b><p>Cadastre um novo item ou altere a pesquisa.</p></div> }
+    @else { <div class="table-wrap"><table><thead><tr><th>ID</th>
+      @for (f of fields; track f.key) { @if (f.key !== 'senha' && f.key !== 'descricao') { <th>{{ f.label }}</th> } }
+      @if (resource === 'tarefas' || resource === 'orcamentos') { <th>Status</th> }<th>Ações</th>
+    </tr></thead><tbody>@for (item of filtered(); track item.id) { <tr><td>#{{ item.id }}</td>
+      @for (f of fields; track f.key) { @if (f.key !== 'senha' && f.key !== 'descricao') { <td>{{ display(item, f.key) }}</td> } }
+      @if (resource === 'tarefas') { <td><select class="status" [value]="value(item, 'status')" (change)="changeStatus(item, $event)"><option value="PENDENTE">Pendente</option><option value="EM_ANDAMENTO">Em andamento</option><option value="CONCLUIDA">Concluída</option></select></td> }
+      @else if (resource === 'orcamentos') { <td><span class="pill">{{ statusLabel(value(item, 'status')) }}</span></td> }
+      <td class="actions"><button (click)="view(item.id)">Ver</button><button (click)="edit(item)">Editar</button><button class="danger" (click)="remove(item)">Excluir</button></td></tr> }
+    </tbody></table></div> }
+  </div>
+</section>
+@if (modal()) {
+  <div class="overlay" (click)="modal.set(false)"><div class="modal" (click)="$event.stopPropagation()">
+    <header><div><span>{{ editingId === null ? 'NOVO' : 'EDIÇÃO' }}</span><h2>{{ editingId === null ? 'Cadastrar' : 'Editar' }} {{ title.toLowerCase() }}</h2></div><button (click)="modal.set(false)">×</button></header>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      @for (f of fields; track f.key) { <label>{{ f.label }} @if (f.required) { <em>*</em> }
+        @if (f.type === 'textarea') { <textarea [formControlName]="f.key" rows="4"></textarea> } @else { <input [type]="f.type" [formControlName]="f.key" [step]="f.key === 'preco' ? '0.01' : '1'" /> }
+        @if (control(f.key)?.touched && control(f.key)?.invalid) { <small>Preencha este campo corretamente.</small> }
+      </label> }
+      <footer><button type="button" (click)="modal.set(false)">Cancelar</button><button class="primary" type="submit" [disabled]="saving()">{{ saving() ? 'Salvando…' : 'Salvar' }}</button></footer>
+    </form>
+  </div></div>
+}
+@if (detail()) {
+  <div class="overlay" (click)="detail.set(null)"><div class="modal" (click)="$event.stopPropagation()"><header><div><span>DETALHES</span><h2>Registro #{{ detail()!.id }}</h2></div><button (click)="detail.set(null)">×</button></header><dl>
+    @for (f of fields; track f.key) { @if (f.key !== 'senha') { <div><dt>{{ f.label }}</dt><dd>{{ display(detail()!, f.key) }}</dd></div> } }
+    @if (resource === 'tarefas' || resource === 'orcamentos') { <div><dt>Status</dt><dd>{{ statusLabel(value(detail()!, 'status')) }}</dd></div> }
+  </dl><footer><button class="primary" (click)="detail.set(null)">Fechar</button></footer></div></div>
+}

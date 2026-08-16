@@ -6,6 +6,7 @@ import com.example.amportoes.entity.Usuario;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -13,13 +14,16 @@ import java.util.List;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UsuarioResponse criar(UsuarioRequest request) {
         Usuario usuario = request.toEntity();
+        usuario.setSenha(passwordEncoder.encode(request.senha()));
         Usuario salvo = usuarioRepository.save(usuario);
         return UsuarioResponse.fromEntity(salvo);
     }
@@ -41,7 +45,7 @@ public class UsuarioService {
 
         usuario.setNome(request.nome());
         usuario.setEmail(request.email());
-        usuario.setSenha(request.senha());
+        usuario.setSenha(passwordEncoder.encode(request.senha()));
 
         Usuario atualizado = usuarioRepository.save(usuario);
         return UsuarioResponse.fromEntity(atualizado);
