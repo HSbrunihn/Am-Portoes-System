@@ -2,8 +2,8 @@
   <h4 class="mb-4">A&M Portões</h4>
 
   <nav class="nav flex-column gap-1">
-    <a class="nav-link text-white" href="#" (click)="onClick('todas')">Dashboard</a>
-    <a class="nav-link text-white-50" href="#" (click)="onClick('todas')">Todas as Tarefas</a>
-    <a class="nav-link text-white-50" href="#" (click)="onClick('prioridade')">Por prioridade</a>
+    <a class="nav-link text-white" href="#" (click)="onClick($event, 'todas')">Dashboard</a>
+    <a class="nav-link text-white-50" href="#" (click)="onClick($event, 'todas')">Todas as Tarefas</a>
+    <a class="nav-link text-white-50" href="#" (click)="onClick($event, 'prioridade')">Por prioridade</a>
   </nav>
 </div>
