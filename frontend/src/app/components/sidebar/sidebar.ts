@@ -9,8 +9,8 @@ import { Component, Output, EventEmitter } from '@angular/core';
 export class Sidebar {
   @Output() navegar = new EventEmitter<string>();
 
-  onClick(secao: string): void {
+  onClick(event: Event, secao: string): void {
+    event.preventDefault();
     this.navegar.emit(secao);
   }
-  
 }
