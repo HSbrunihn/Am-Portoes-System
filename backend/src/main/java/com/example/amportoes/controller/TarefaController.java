@@ -27,8 +27,8 @@ public class TarefaController {
     }
 
     @GetMapping
-    public List<TarefaResponse> listar() {
-        return tarefaService.listar();
+    public List<TarefaResponse> listar(@RequestParam(required = false) StatusTarefa status) {
+        return tarefaService.listar(status);
     }
 
     @GetMapping("/{id}")

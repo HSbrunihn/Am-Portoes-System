@@ -27,9 +27,12 @@ public class OrcamentoService {
         return OrcamentoResponse.fromEntity(salvo);
     }
 
-    public List<OrcamentoResponse> listar() {
-        return orcamentoRepository.findAll()
-                .stream()
+    public List<OrcamentoResponse> listar(StatusTarefa status) {
+        List<Orcamento> orcamentos = (status == null)
+                ? orcamentoRepository.findAll()
+                : orcamentoRepository.findByStatus(status);
+
+        return orcamentos.stream()
                 .map(OrcamentoResponse::fromEntity)
                 .toList();
     }

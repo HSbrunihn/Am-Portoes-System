@@ -26,8 +26,8 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public List<UsuarioResponse> listar() {
-        return usuarioService.listar();
+    public List<UsuarioResponse> listar(@RequestParam(required = false) String nome) {
+        return usuarioService.listar(nome);
     }
 
     @GetMapping("/{id}")
