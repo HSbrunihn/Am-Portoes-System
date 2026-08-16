@@ -24,9 +24,12 @@ public class ProdutoService {
         return ProdutoResponse.fromEntity(salvo);
     }
 
-    public List<ProdutoResponse> listar() {
-        return produtoRepository.findAll()
-                .stream()
+    public List<ProdutoResponse> listar(String nome) {
+        List<Produto> produtos = (nome == null || nome.isBlank())
+                ? produtoRepository.findAll()
+                : produtoRepository.findByNomeContainingIgnoreCase(nome);
+
+        return produtos.stream()
                 .map(ProdutoResponse::fromEntity)
                 .toList();
     }

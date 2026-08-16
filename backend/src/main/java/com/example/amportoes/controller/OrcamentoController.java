@@ -2,6 +2,7 @@ package com.example.amportoes.controller;
 
 import com.example.amportoes.controller.request.OrcamentoRequest;
 import com.example.amportoes.controller.response.OrcamentoResponse;
+import com.example.amportoes.entity.StatusTarefa;
 import com.example.amportoes.service.OrcamentoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,8 +27,8 @@ public class OrcamentoController {
     }
 
     @GetMapping
-    public List<OrcamentoResponse> listar() {
-        return orcamentoService.listar();
+    public List<OrcamentoResponse> listar(@RequestParam(required = false) StatusTarefa status) {
+        return orcamentoService.listar(status);
     }
 
     @GetMapping("/{id}")

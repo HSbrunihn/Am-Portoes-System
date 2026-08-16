@@ -28,9 +28,12 @@ public class UsuarioService {
         return UsuarioResponse.fromEntity(salvo);
     }
 
-    public List<UsuarioResponse> listar() {
-        return usuarioRepository.findAll()
-                .stream()
+    public List<UsuarioResponse> listar(String nome) {
+        List<Usuario> usuarios = (nome == null || nome.isBlank())
+                ? usuarioRepository.findAll()
+                : usuarioRepository.findByNomeContainingIgnoreCase(nome);
+
+        return usuarios.stream()
                 .map(UsuarioResponse::fromEntity)
                 .toList();
     }
