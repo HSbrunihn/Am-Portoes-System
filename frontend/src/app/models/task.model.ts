@@ -15,3 +15,10 @@ export interface Task {
     descricao: string;
     produtos: Produto[];
 }
+
+export interface Login {
+    senha: string;
+    usuario: string;
+    email: string;
+}
+
