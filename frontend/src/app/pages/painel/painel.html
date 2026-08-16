@@ -1,0 +1,44 @@
+<div class="d-flex">
+  <app-sidebar (navegar)="onNavegar($event)"></app-sidebar>
+
+  <div class="flex-grow-1">
+    <app-header></app-header>
+
+    <div class="p-4">
+      <div class="row g-3 mb-4">
+        <div class="col-3">
+          <app-summary-card titulo="Em andamento" [quantidade]="emAndamento" cor="primary"></app-summary-card>
+        </div>
+        <div class="col-3">
+          <app-summary-card titulo="Concluídas" [quantidade]="concluidas" cor="success"></app-summary-card>
+        </div>
+        <div class="col-3">
+          <app-summary-card titulo="Aguardando" [quantidade]="aguardando" cor="warning"></app-summary-card>
+        </div>
+        <div class="col-3">
+          <app-summary-card titulo="Alta prioridade" [quantidade]="altaPrioridade" cor="danger"></app-summary-card>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-7">
+
+          <div class="btn-group mb-3">
+            <button class="btn btn-outline-secondary" [class.active]="filtroAtivo === 'Todas'" (click)="setFiltro('Todas')">Todas</button>
+            <button class="btn btn-outline-danger" [class.active]="filtroAtivo === 'Alta'" (click)="setFiltro('Alta')">Alta</button>
+            <button class="btn btn-outline-warning" [class.active]="filtroAtivo === 'Média'" (click)="setFiltro('Média')">Média</button>
+            <button class="btn btn-outline-success" [class.active]="filtroAtivo === 'Baixa'" (click)="setFiltro('Baixa')">Baixa</button>
+          </div>
+
+          @for (task of tasksFiltradas; track task.id) {
+            <app-task-card [task]="task" (excluir)="onExcluirTask($event)" (editar)="onEditarTask($event)" (verDetalhes)="onVerDetalhes($event)"></app-task-card>
+          }
+        </div>
+        <div class="col-5">
+          <app-task-form [taskParaEditar]="taskEmEdicao" (concluido)="onFormConcluido()"></app-task-form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<app-task-detail [task]="taskEmDetalhe" (fechar)="onFecharDetalhes()"></app-task-detail>
