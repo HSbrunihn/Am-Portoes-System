@@ -27,9 +27,12 @@ public class TarefaService {
         return toResponse(salva);
     }
 
-    public List<TarefaResponse> listar() {
-        return tarefaRepository.findAll()
-                .stream()
+    public List<TarefaResponse> listar(StatusTarefa status) {
+        List<Tarefa> tarefas = (status == null)
+                ? tarefaRepository.findAll()
+                : tarefaRepository.findByStatus(status);
+
+        return tarefas.stream()
                 .map(this::toResponse)
                 .toList();
     }
