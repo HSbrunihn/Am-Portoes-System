@@ -1,0 +1,19 @@
+
+
+
+<div class="card mb-3">
+    <div class="card-body">
+
+        <h5 class="card-title">{{task.nome}}</h5>
+        <p class="card-text">{{task.descricao}}</p>
+
+        <span class="badge bg-primary">{{task.status}}</span>
+       <span class="badge" style="background-color: #f97316;">{{ task.prioridade }}</span>
+
+        <p class="card-text"> R$ {{task.valor}}</p>
+
+        <button class="btn btn-outline-secondary btn-sm me-2" (click)="onVerDetalhes()">Detalhes</button>
+        <button class="btn btn-outline-primary btn-sm me-2" (click)="onEditar()">Editar</button>
+         <button class="btn btn-outline-danger btn-sm" (click)="onExcluir()">Excluir</button>
+    </div>
+</div>
