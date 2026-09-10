@@ -25,7 +25,10 @@ public class Produto {
 
     private Long codigo;
     private String nome;
+    private String descricao;
     private BigDecimal preco;
+    private Integer quantidadeEstoque;
+    private Integer estoqueMinimo;
     private LocalDate dataValidade;
 
 }
