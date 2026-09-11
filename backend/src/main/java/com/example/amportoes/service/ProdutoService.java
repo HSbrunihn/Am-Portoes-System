@@ -7,6 +7,7 @@ import com.example.amportoes.entity.Produto;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class ProdutoService {
         return toDTO(buscarEntidadePorId(id));
     }
 
+    @Transactional
     public ProdutoDTO atualizar(Long id, ProdutoDTO dto) {
         Produto produto = buscarEntidadePorId(id);
         atualizarEntidade(produto, dto);
