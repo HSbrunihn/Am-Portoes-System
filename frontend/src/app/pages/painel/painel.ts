@@ -48,7 +48,7 @@ export class Painel {
   }
 
   protected onExcluirTask(id: number): void {
-    this.taskService.deleteTask(id);
+    this.taskService.deleteTask(id).subscribe();
   }
 
   protected onEditarTask(task: Task): void {

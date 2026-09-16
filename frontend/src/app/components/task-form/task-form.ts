@@ -16,6 +16,7 @@ export class TaskForm implements OnChanges {
   @Output() concluido = new EventEmitter<void>();
 
   novaTask: Partial<Task> = {};
+  saving = false;
 
   ngOnChanges(): void {
     if (this.taskParaEditar) {
@@ -24,6 +25,8 @@ export class TaskForm implements OnChanges {
   }
 
   onSalvar(): void {
+    if (this.saving) return;
+
     const task: Task = {
       id: this.taskParaEditar?.id ?? Date.now(),
       nome: this.novaTask.nome ?? '',
@@ -31,15 +34,26 @@ export class TaskForm implements OnChanges {
       prioridade: this.novaTask.prioridade ?? 'Média',
       valor: this.novaTask.valor ?? 0,
       descricao: this.novaTask.descricao ?? '',
-      produtos: this.taskParaEditar?.produtos ?? []
+      produtos: this.taskParaEditar?.produtos ?? [],
+      dataVencimento: this.novaTask.dataVencimento ?? new Date().toISOString().slice(0, 10),
     };
 
+    this.saving = true;
     if (this.taskParaEditar) {
-      this.taskService.updateTask(task);
+      this.taskService.updateTask(task).subscribe({
+        next: () => this.finalizar(),
+        error: () => this.saving = false,
+      });
     } else {
-      this.taskService.addTask(task);
+      this.taskService.addTask(task).subscribe({
+        next: () => this.finalizar(),
+        error: () => this.saving = false,
+      });
     }
+  }
 
+  private finalizar(): void {
+    this.saving = false;
     this.novaTask = {};
     this.concluido.emit();
   }

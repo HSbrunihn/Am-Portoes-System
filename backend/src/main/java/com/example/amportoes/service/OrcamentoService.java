@@ -47,6 +47,7 @@ public class OrcamentoService {
 
         orcamento.setTitulo(request.titulo());
         orcamento.setDescricao(request.descricao());
+        orcamento.setValor(request.valor());
         orcamento.setDataVencimento(request.dataVencimento());
 
         Orcamento atualizado = orcamentoRepository.save(orcamento);

@@ -14,6 +14,7 @@ export interface Task {
     valor: number;
     descricao: string;
     produtos: Produto[];
+    dataVencimento?: string;
 }
 
 export interface Login {
