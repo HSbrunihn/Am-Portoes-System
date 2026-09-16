@@ -2,15 +2,13 @@ import { Component, inject } from '@angular/core';
 import { TaskCard } from '../../components/task-card/task-card';
 import { TaskForm } from '../../components/task-form/task-form';
 import { SummaryCard } from '../../components/summary-card/summary-card';
-import { Sidebar } from '../../components/sidebar/sidebar';
-import { Header } from '../../components/header/header';
 import { TaskDetail } from '../../components/task-detail/task-detail';
 import { TaskService } from '../../services/task';
 import { Task } from '../../models/task.model';
 
 @Component({
   selector: 'app-painel',
-  imports: [TaskCard, TaskForm, SummaryCard, Sidebar, Header, TaskDetail],
+  imports: [TaskCard, TaskForm, SummaryCard, TaskDetail],
   templateUrl: './painel.html',
   styleUrl: './painel.scss',
 })
@@ -67,9 +65,4 @@ export class Painel {
     this.taskEmDetalhe = null;
   }
 
-  protected onNavegar(secao: string): void {
-    if (secao === 'todas') {
-      this.filtroAtivo = 'Todas';
-    }
-  }
 }
