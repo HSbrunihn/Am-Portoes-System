@@ -2,11 +2,11 @@ package com.example.amportoes.controller;
 
 import com.example.amportoes.entity.Produto;
 import com.example.amportoes.repository.ProdutoRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -50,9 +50,8 @@ class ProdutoControllerIntegrationTest {
                         .content(jsonProduto("Portao basculante", "1200.00", 5, 2)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nome", is("Portao basculante")))
-                .andExpect(jsonPath("$.preco", is(1200.0)))
-                .andExpect(jsonPath("$.quantidadeEstoque", is(5)))
-                .andExpect(jsonPath("$.estoqueMinimo", is(2)));
+                .andExpect(jsonPath("$.codigo", is(5)))
+                .andExpect(jsonPath("$.preco", is(1200.0)));
 
         org.assertj.core.api.Assertions.assertThat(produtoRepository.count()).isEqualTo(1);
     }
@@ -75,7 +74,7 @@ class ProdutoControllerIntegrationTest {
         mockMvc.perform(get(PRODUTOS_URL + "/" + produto.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome", is("Portao pivotante")))
-                .andExpect(jsonPath("$.descricao", is("Produto de teste")));
+                .andExpect(jsonPath("$.codigo", is(3)));
     }
 
     @Test
@@ -87,9 +86,8 @@ class ProdutoControllerIntegrationTest {
                         .content(jsonProduto("Nome atualizado", "1750.50", 10, 3)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome", is("Nome atualizado")))
-                .andExpect(jsonPath("$.preco", is(1750.5)))
-                .andExpect(jsonPath("$.quantidadeEstoque", is(10)))
-                .andExpect(jsonPath("$.estoqueMinimo", is(3)));
+                .andExpect(jsonPath("$.codigo", is(10)))
+                .andExpect(jsonPath("$.preco", is(1750.5)));
 
         Produto atualizado = produtoRepository.findById(produto.getId()).orElseThrow();
         org.assertj.core.api.Assertions.assertThat(atualizado.getNome()).isEqualTo("Nome atualizado");
@@ -131,19 +129,17 @@ class ProdutoControllerIntegrationTest {
                 .andExpect(jsonPath("$.status", is(400)))
                 .andExpect(jsonPath("$.mensagem", is("Dados inválidos")))
                 .andExpect(jsonPath("$.campos.nome", is("O nome é obrigatório")))
-                .andExpect(jsonPath("$.campos.preco", is("O preço é obrigatório")))
-                .andExpect(jsonPath("$.campos.quantidadeEstoque", is("A quantidade em estoque é obrigatória")))
-                .andExpect(jsonPath("$.campos.estoqueMinimo", is("O estoque mínimo é obrigatório")));
+                .andExpect(jsonPath("$.campos.codigo", is("O código é obrigatório")))
+                .andExpect(jsonPath("$.campos.preco", is("O preço é obrigatório")));
     }
 
     @Test
     void deveRetornar400ParaEstoqueNegativo() throws Exception {
         mockMvc.perform(post(PRODUTOS_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonProduto("Produto inválido", "100.00", -1, -2)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nome\":\"Produto inválido\",\"preco\":100.00}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.campos.quantidadeEstoque", is("A quantidade em estoque não pode ser negativa")))
-                .andExpect(jsonPath("$.campos.estoqueMinimo", is("O estoque mínimo não pode ser negativo")));
+            .andExpect(jsonPath("$.campos.codigo", is("O código é obrigatório")));
     }
 
     @Test
@@ -160,6 +156,7 @@ class ProdutoControllerIntegrationTest {
 
     private Produto salvarProduto(String nome, String preco, int quantidadeEstoque, int estoqueMinimo) {
         Produto produto = new Produto();
+        produto.setCodigo((long) quantidadeEstoque);
         produto.setNome(nome);
         produto.setDescricao("Produto de teste");
         produto.setPreco(new BigDecimal(preco));
@@ -171,20 +168,18 @@ class ProdutoControllerIntegrationTest {
     private String jsonProduto(String nome, String preco, int quantidadeEstoque, int estoqueMinimo)
             throws Exception {
         return objectMapper.writeValueAsString(new ProdutoPayload(
-                nome,
-                "Produto de teste",
-                new BigDecimal(preco),
-                quantidadeEstoque,
-                estoqueMinimo
+            nome,
+            (long) quantidadeEstoque,
+            new BigDecimal(preco),
+            "2027-01-01"
         ));
     }
 
     private record ProdutoPayload(
             String nome,
-            String descricao,
+            Long codigo,
             BigDecimal preco,
-            Integer quantidadeEstoque,
-            Integer estoqueMinimo
+            String dataValidade
     ) {
     }
 }
