@@ -15,33 +15,32 @@ import { Task } from '../../models/task.model';
   styleUrl: './painel.scss',
 })
 export class Painel {
-  private taskService = inject(TaskService);
-  protected readonly tasks = this.taskService.getTasks();
+  private readonly taskService = inject(TaskService);
   protected taskEmEdicao: Task | null = null;
   protected filtroAtivo: 'Todas' | 'Alta' | 'Média' | 'Baixa' = 'Todas';
   protected taskEmDetalhe: Task | null = null;
 
   protected get emAndamento(): number {
-    return this.tasks.filter(t => t.status === 'Em andamento').length;
+    return this.taskService.getTasks().filter(t => t.status === 'Em andamento').length;
   }
 
   protected get concluidas(): number {
-    return this.tasks.filter(t => t.status === 'Concluída').length;
+    return this.taskService.getTasks().filter(t => t.status === 'Concluída').length;
   }
 
   protected get aguardando(): number {
-    return this.tasks.filter(t => t.status === 'Aguardando').length;
+    return this.taskService.getTasks().filter(t => t.status === 'Aguardando').length;
   }
 
   protected get altaPrioridade(): number {
-    return this.tasks.filter(t => t.prioridade === 'Alta').length;
+    return this.taskService.getTasks().filter(t => t.prioridade === 'Alta').length;
   }
 
   protected get tasksFiltradas(): Task[] {
     if (this.filtroAtivo === 'Todas') {
-      return this.tasks;
+      return this.taskService.getTasks();
     }
-    return this.tasks.filter(t => t.prioridade === this.filtroAtivo);
+    return this.taskService.getTasks().filter(t => t.prioridade === this.filtroAtivo);
   }
 
   protected setFiltro(prioridade: 'Todas' | 'Alta' | 'Média' | 'Baixa'): void {

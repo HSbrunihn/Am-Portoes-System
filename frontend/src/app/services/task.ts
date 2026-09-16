@@ -1,32 +1,51 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
+import { ApiService } from './api.service';
+import { Tarefa } from '../models/api.model';
 import { Task } from '../models/task.model';
-import { TASKS_MOCK } from '../mock-data/tasks.mock';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TaskService {
-  private tasks: Task[] = TASKS_MOCK;
+  private readonly tasks = signal<Task[]>([]);
+
+  constructor(private readonly api: ApiService) {
+    this.api.list<Tarefa>('tarefas').subscribe({
+      next: tarefas => this.tasks.set(tarefas.map(tarefa => this.toTask(tarefa))),
+    });
+  }
 
   getTasks(): Task[] {
-    return this.tasks;
+    return this.tasks();
   }
 
   addTask(task: Task): void {
-    this.tasks.push(task);
+    this.tasks.update(tasks => [...tasks, task]);
   }
 
   deleteTask(id: number): void {
-    const index = this.tasks.findIndex(task => task.id === id);
-    if (index !== -1) {
-      this.tasks.splice(index, 1);
-    }
+    this.tasks.update(tasks => tasks.filter(task => task.id !== id));
   }
 
   updateTask(taskAtualizada: Task): void {
-    const index = this.tasks.findIndex(task => task.id === taskAtualizada.id);
-    if (index !== -1) {
-      this.tasks[index] = taskAtualizada;
-    }
+    this.tasks.update(tasks => tasks.map(task =>
+      task.id === taskAtualizada.id ? taskAtualizada : task
+    ));
+  }
+
+  private toTask(tarefa: Tarefa): Task {
+    return {
+      id: tarefa.id,
+      nome: tarefa.titulo,
+      status: {
+        PENDENTE: 'Aguardando',
+        EM_ANDAMENTO: 'Em andamento',
+        CONCLUIDA: 'Concluída',
+      }[tarefa.status] as Task['status'],
+      prioridade: 'Média',
+      valor: 0,
+      descricao: tarefa.descricao ?? '',
+      produtos: [],
+    };
   }
 }

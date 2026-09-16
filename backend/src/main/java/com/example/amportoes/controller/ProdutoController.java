@@ -1,6 +1,7 @@
 package com.example.amportoes.controller;
 
-import com.example.amportoes.dto.ProdutoDTO;
+import com.example.amportoes.controller.request.ProdutoRequest;
+import com.example.amportoes.controller.response.ProdutoResponse;
 import com.example.amportoes.service.ProdutoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -20,23 +21,23 @@ public class ProdutoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProdutoDTO criar(@RequestBody @Valid ProdutoDTO dto) {
-        return produtoService.criar(dto);
+    public ProdutoResponse criar(@RequestBody @Valid ProdutoRequest request) {
+        return produtoService.criar(request);
     }
 
     @GetMapping
-    public List<ProdutoDTO> listar() {
-        return produtoService.listar();
+    public List<ProdutoResponse> listar() {
+        return produtoService.listar(null);
     }
 
     @GetMapping("/{id}")
-    public ProdutoDTO buscarPorId(@PathVariable Long id) {
-        return produtoService.buscarPorIdDTO(id);
+    public ProdutoResponse buscarPorId(@PathVariable Long id) {
+        return produtoService.buscarPorId(id);
     }
 
     @PutMapping("/{id}")
-    public ProdutoDTO atualizar(@PathVariable Long id, @RequestBody @Valid ProdutoDTO dto) {
-        return produtoService.atualizar(id, dto);
+    public ProdutoResponse atualizar(@PathVariable Long id, @RequestBody @Valid ProdutoRequest request) {
+        return produtoService.atualizar(id, request);
     }
 
     @DeleteMapping("/{id}")
@@ -46,7 +47,7 @@ public class ProdutoController {
     }
 
     @GetMapping("/baixo-estoque")
-    public List<ProdutoDTO> listarProdutosComBaixoEstoque() {
-        return produtoService.listarProdutosComBaixoEstoque();
+    public List<ProdutoResponse> listarProdutosComBaixoEstoque() {
+        return produtoService.listarProdutosComBaixoEstoqueResponse();
     }
 }
