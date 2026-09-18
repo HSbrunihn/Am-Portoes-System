@@ -1,17 +1,25 @@
-package com.seuprojeto.dto;
+package com.example.amportoes.dto;
+
+import com.example.amportoes.entity.TipoMovimentacao;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDateTime;
-import com.seuprojeto.entity.TipoMovimentacao;
 
 public class MovimentacaoDTO {
 
+    @NotNull(message = "O produto é obrigatório")
     private Long produtoId;
-    private Double quantidade;
+
+    @NotNull(message = "A quantidade é obrigatória")
+    @Positive(message = "A quantidade deve ser maior que zero")
+    private Integer quantidade;
+
+    @NotNull(message = "O tipo da movimentação é obrigatório")
     private TipoMovimentacao tipo;
+
     private String observacao;
     private LocalDateTime dataMovimentacao;
-
-    // Getters e Setters
 
     public Long getProdutoId() {
         return produtoId;
@@ -21,11 +29,11 @@ public class MovimentacaoDTO {
         this.produtoId = produtoId;
     }
 
-    public Double getQuantidade() {
+    public Integer getQuantidade() {
         return quantidade;
     }
 
-    public void setQuantidade(Double quantidade) {
+    public void setQuantidade(Integer quantidade) {
         this.quantidade = quantidade;
     }
 

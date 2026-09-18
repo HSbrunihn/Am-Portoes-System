@@ -92,7 +92,10 @@ public class ProdutoService {
 
         produto.setNome(request.nome());
         produto.setCodigo(request.codigo());
+        produto.setDescricao(request.descricao());
         produto.setPreco(request.preco());
+        produto.setQuantidadeEstoque(request.quantidadeEstoque());
+        produto.setEstoqueMinimo(request.estoqueMinimo());
         produto.setDataValidade(request.dataValidade());
 
         Produto atualizado = produtoRepository.save(produto);

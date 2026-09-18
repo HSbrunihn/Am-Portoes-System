@@ -5,12 +5,14 @@ com\example\amportoes\controller\OrcamentoController.class
 com\example\amportoes\controller\UsuarioController.class
 com\example\amportoes\AmPortoesApplication.class
 com\example\amportoes\controller\response\ProdutoResponse.class
+com\example\amportoes\repository\MovimentacaoRepository.class
 com\example\amportoes\entity\Orcamento.class
 com\example\amportoes\service\ProdutoService.class
 com\example\amportoes\entity\Usuario.class
 com\example\amportoes\exception\GlobalExceptionHandler.class
 com\example\amportoes\exception\RecursoNaoEncontradoException.class
 com\example\amportoes\controller\request\LoginRequest.class
+com\example\amportoes\service\MovimentacaoService.class
 com\example\amportoes\controller\response\TarefaResponse.class
 com\example\amportoes\service\OrcamentoService.class
 com\example\amportoes\controller\AuthController.class
@@ -18,6 +20,7 @@ com\example\amportoes\service\UsuarioService.class
 com\example\amportoes\controller\request\TarefaRequest.class
 com\example\amportoes\repository\OrcamentoRepository.class
 com\example\amportoes\controller\request\ProdutoRequest.class
+com\example\amportoes\entity\MovimentacaoEstoque.class
 com\example\amportoes\dto\ProdutoDTO.class
 com\example\amportoes\controller\TarefaController.class
 com\example\amportoes\repository\TarefaRepository.class
@@ -27,6 +30,9 @@ com\example\amportoes\repository\ProdutoRepository.class
 com\example\amportoes\controller\response\OrcamentoResponse.class
 com\example\amportoes\controller\request\UsuarioRequest.class
 com\example\amportoes\entity\StatusTarefa.class
+com\example\amportoes\entity\TipoMovimentacao.class
+com\example\amportoes\controller\MovimentacaoController.class
 com\example\amportoes\controller\ProdutoController.class
+com\example\amportoes\dto\MovimentacaoDTO.class
 com\example\amportoes\service\TarefaService.class
 com\example\amportoes\controller\response\UsuarioResponse.class
