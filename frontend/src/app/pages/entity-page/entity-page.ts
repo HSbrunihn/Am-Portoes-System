@@ -38,11 +38,13 @@ const FIELDS: Record<Resource, Field[]> = {
   tarefas: [
     { key: 'titulo', label: 'Título', type: 'text', required: true },
     { key: 'descricao', label: 'Descrição', type: 'textarea' },
+    { key: 'valor', label: 'Valor', type: 'number', required: true, min: 0 },
     { key: 'dataVencimento', label: 'Data de vencimento', type: 'date', required: true },
   ],
   orcamentos: [
     { key: 'titulo', label: 'Título', type: 'text', required: true },
     { key: 'descricao', label: 'Descrição', type: 'textarea' },
+    { key: 'valor', label: 'Valor', type: 'number', required: true, min: 0 },
     { key: 'dataVencimento', label: 'Data de vencimento', type: 'date', required: true },
   ],
   produtos: [
@@ -167,10 +169,25 @@ export class EntityPage implements OnInit, OnDestroy {
       };
     else if (this.resource === 'usuarios')
       payload = { nome: String(v['nome']), email: String(v['email']), senha: String(v['senha']) };
+    else if (this.resource === 'orcamentos')
+      payload = {
+        titulo: String(v['titulo']),
+        descricao: String(v['descricao'] ?? ''),
+        valor: Number(v['valor']),
+        dataVencimento: String(v['dataVencimento']),
+      };
+    else if (this.resource === 'tarefas')
+      payload = {
+        titulo: String(v['titulo']),
+        descricao: String(v['descricao'] ?? ''),
+        valor: Number(v['valor']),
+        dataVencimento: String(v['dataVencimento']),
+      };
     else
       payload = {
         titulo: String(v['titulo']),
         descricao: String(v['descricao'] ?? ''),
+        valor: Number(v['valor']),
         dataVencimento: String(v['dataVencimento']),
       };
     const request =
@@ -222,7 +239,7 @@ export class EntityPage implements OnInit, OnDestroy {
   display(item: ApiEntity, key: string): string {
     const v = this.value(item, key);
     if (v === null || v === '') return '—';
-    if (key === 'preco')
+    if (key === 'preco' || key === 'valor')
       return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     return String(v);
   }
