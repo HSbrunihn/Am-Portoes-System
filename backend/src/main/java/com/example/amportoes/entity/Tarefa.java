@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -27,6 +28,7 @@ public class Tarefa {
 
     private String titulo;
     private String descricao;
+    private BigDecimal valor;
     private LocalDate dataVencimento;
 
 }

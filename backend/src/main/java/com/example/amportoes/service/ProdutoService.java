@@ -57,6 +57,15 @@ public class ProdutoService {
                 .toList();
     }
 
+            public List<ProdutoResponse> listarProdutosComBaixoEstoqueResponse() {
+            return produtoRepository.findAll().stream()
+                .filter(produto -> produto.getQuantidadeEstoque() != null
+                    && produto.getEstoqueMinimo() != null
+                    && produto.getQuantidadeEstoque() <= produto.getEstoqueMinimo())
+                .map(ProdutoResponse::fromEntity)
+                .toList();
+            }
+
     public ProdutoResponse criar(ProdutoRequest request) {
         Produto produto = request.toEntity();
         Produto salvo = produtoRepository.save(produto);
