@@ -1,5 +1,15 @@
+package com.example.amportoes.service;
+
+import com.example.amportoes.dto.MovimentacaoDTO;
+import com.example.amportoes.entity.MovimentacaoEstoque;
+import com.example.amportoes.entity.Produto;
+import com.example.amportoes.entity.TipoMovimentacao;
+import com.example.amportoes.repository.MovimentacaoRepository;
+import com.example.amportoes.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class MovimentacaoService {
@@ -8,7 +18,7 @@ public class MovimentacaoService {
     private final ProdutoRepository produtoRepository;
 
     public MovimentacaoService(MovimentacaoRepository movimentacaoRepository,
-                               ProdutoRepository produtoRepository) {
+                              ProdutoRepository produtoRepository) {
         this.movimentacaoRepository = movimentacaoRepository;
         this.produtoRepository = produtoRepository;
     }
@@ -18,15 +28,15 @@ public class MovimentacaoService {
         Produto produto = produtoRepository.findById(dto.getProdutoId())
                 .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
 
-        // Regra de negócio
-        if (dto.getTipo() == TipoMovimentacao.SAIDA && produto.getQuantidade() < dto.getQuantidade()) {
-            throw new RuntimeException("Estoque insuficiente para saída");
-        }
-
-        if (dto.getTipo() == TipoMovimentacao.ENTRADA) {
-            produto.setQuantidade(produto.getQuantidade() + dto.getQuantidade());
+        if (dto.getTipo() == TipoMovimentacao.SAIDA) {
+            if (produto.getQuantidadeEstoque() == null || produto.getQuantidadeEstoque() < dto.getQuantidade()) {
+                throw new IllegalArgumentException("Estoque insuficiente para saída");
+            }
+            produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - dto.getQuantidade());
+        } else if (dto.getTipo() == TipoMovimentacao.ENTRADA) {
+            produto.setQuantidadeEstoque((produto.getQuantidadeEstoque() == null ? 0 : produto.getQuantidadeEstoque()) + dto.getQuantidade());
         } else {
-            produto.setQuantidade(produto.getQuantidade() - dto.getQuantidade());
+            throw new RuntimeException("Tipo de movimentação inválido");
         }
 
         produtoRepository.save(produto);

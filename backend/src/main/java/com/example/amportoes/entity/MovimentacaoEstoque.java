@@ -1,8 +1,15 @@
+package com.example.amportoes.entity;
+
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "movimentacao_estoque")
+@Getter
+@Setter
 public class MovimentacaoEstoque {
 
     @Id
@@ -14,7 +21,7 @@ public class MovimentacaoEstoque {
     private Produto produto;
 
     @Column(nullable = false)
-    private Double quantidade;
+    private Integer quantidade;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -25,6 +32,4 @@ public class MovimentacaoEstoque {
 
     @Column(name = "observacao")
     private String observacao;
-
-    // Getters e Setters
 }

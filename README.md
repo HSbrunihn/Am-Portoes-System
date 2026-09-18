@@ -45,3 +45,5 @@ Commits seguem o padrão [Conventional Commits](https://www.conventionalcommits.
 - `chore:` tarefas de manutenção (config, dependências, etc.)
 - `docs:` documentação
 - `refactor:` refatoração sem mudança de comportamento
+
+
