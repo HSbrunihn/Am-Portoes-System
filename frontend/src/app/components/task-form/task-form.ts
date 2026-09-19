@@ -1,46 +1,64 @@
-import { Component, inject, Input, OnChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Task } from '../../models/task.model';
 import { TaskService } from '../../services/task';
+import { Task } from '../../models/task.model';
 
 @Component({
   selector: 'app-task-form',
-  imports: [FormsModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './task-form.html',
   styleUrl: './task-form.scss',
 })
 export class TaskForm implements OnChanges {
-  private taskService = inject(TaskService);
+  protected readonly taskService = inject(TaskService);
 
   @Input() taskParaEditar: Task | null = null;
   @Output() concluido = new EventEmitter<void>();
 
-  novaTask: Partial<Task> = {};
+  protected saving = false;
 
-  ngOnChanges(): void {
-    if (this.taskParaEditar) {
+  protected novaTask: Partial<Task> = {
+    nome: '',
+    valor: 0,
+    descricao: '',
+    dataVencimento: new Date().toISOString().slice(0, 10),
+    status: 'Pendente',
+    prioridade: 'Média',
+  };
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['taskParaEditar'] && this.taskParaEditar) {
       this.novaTask = { ...this.taskParaEditar };
     }
   }
 
-  onSalvar(): void {
-    const task: Task = {
-      id: this.taskParaEditar?.id ?? Date.now(),
-      nome: this.novaTask.nome ?? '',
-      status: this.novaTask.status ?? 'Aguardando',
-      prioridade: this.novaTask.prioridade ?? 'Média',
-      valor: this.novaTask.valor ?? 0,
-      descricao: this.novaTask.descricao ?? '',
-      produtos: this.taskParaEditar?.produtos ?? []
-    };
+  protected onSalvar(): void {
+    if (this.saving) return;
 
-    if (this.taskParaEditar) {
-      this.taskService.updateTask(task);
+    this.saving = true;
+
+    if (this.taskParaEditar && this.taskParaEditar.id) {
+      this.taskService.updateTask(this.taskParaEditar.id, this.novaTask).subscribe({
+        next: () => {
+          this.saving = false;
+          this.concluido.emit();
+        },
+        error: () => {
+          this.saving = false;
+        },
+      });
     } else {
-      this.taskService.addTask(task);
+      this.taskService.createTask(this.novaTask).subscribe({
+        next: () => {
+          this.saving = false;
+          this.concluido.emit();
+        },
+        error: () => {
+          this.saving = false;
+        },
+      });
     }
-
-    this.novaTask = {};
-    this.concluido.emit();
   }
 }

@@ -47,6 +47,7 @@ public class TarefaService {
 
         tarefa.setTitulo(request.titulo());
         tarefa.setDescricao(request.descricao());
+        tarefa.setValor(request.valor());
         tarefa.setDataVencimento(request.dataVencimento());
 
         Tarefa atualizada = tarefaRepository.save(tarefa);

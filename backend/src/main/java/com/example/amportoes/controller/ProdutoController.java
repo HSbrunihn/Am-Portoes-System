@@ -26,8 +26,8 @@ public class ProdutoController {
     }
 
     @GetMapping
-    public List<ProdutoResponse> listar(@RequestParam(required = false) String nome) {
-        return produtoService.listar(nome);
+    public List<ProdutoResponse> listar() {
+        return produtoService.listar(null);
     }
 
     @GetMapping("/{id}")
@@ -42,7 +42,12 @@ public class ProdutoController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletar(@PathVariable Long id) {
-        produtoService.deletar(id);
+    public void excluir(@PathVariable Long id) {
+        produtoService.excluir(id);
+    }
+
+    @GetMapping("/baixo-estoque")
+    public List<ProdutoResponse> listarProdutosComBaixoEstoque() {
+        return produtoService.listarProdutosComBaixoEstoqueResponse();
     }
 }
