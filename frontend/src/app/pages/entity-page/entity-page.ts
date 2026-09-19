@@ -13,52 +13,63 @@ import {
   ApiEntity,
   ApiError,
   OrcamentoRequest,
+  Produto,
   ProdutoRequest,
   StatusTarefa,
   TarefaRequest,
   UsuarioRequest,
 } from '../../models/api.model';
 import { ApiService } from '../../services/api.service';
+
 type Resource = 'tarefas' | 'produtos' | 'orcamentos' | 'usuarios';
 type FieldType = 'text' | 'email' | 'password' | 'number' | 'date' | 'textarea';
+
 interface Field {
   key: string;
   label: string;
   type: FieldType;
   required?: boolean;
   min?: number;
+  /** Se true, a coluna não aparece na tabela (só no form/detalhe) */
+  hideInTable?: boolean;
 }
+
 const LABELS: Record<Resource, string> = {
   tarefas: 'Tarefas',
   produtos: 'Produtos',
   orcamentos: 'Orçamentos',
   usuarios: 'Usuários',
 };
+
 const FIELDS: Record<Resource, Field[]> = {
   tarefas: [
     { key: 'titulo', label: 'Título', type: 'text', required: true },
-    { key: 'descricao', label: 'Descrição', type: 'textarea' },
+    { key: 'descricao', label: 'Descrição', type: 'textarea', hideInTable: true },
     { key: 'valor', label: 'Valor', type: 'number', required: true, min: 0 },
     { key: 'dataVencimento', label: 'Data de vencimento', type: 'date', required: true },
   ],
   orcamentos: [
     { key: 'titulo', label: 'Título', type: 'text', required: true },
-    { key: 'descricao', label: 'Descrição', type: 'textarea' },
+    { key: 'descricao', label: 'Descrição', type: 'textarea', hideInTable: true },
     { key: 'valor', label: 'Valor', type: 'number', required: true, min: 0 },
     { key: 'dataVencimento', label: 'Data de vencimento', type: 'date', required: true },
   ],
   produtos: [
     { key: 'codigo', label: 'Código', type: 'number', required: true, min: 0 },
     { key: 'nome', label: 'Nome', type: 'text', required: true },
+    { key: 'descricao', label: 'Descrição', type: 'textarea', hideInTable: true },
     { key: 'preco', label: 'Preço', type: 'number', required: true, min: 0.01 },
+    { key: 'quantidadeEstoque', label: 'Qtd. em estoque', type: 'number', min: 0 },
+    { key: 'estoqueMinimo', label: 'Estoque mínimo', type: 'number', min: 0 },
     { key: 'dataValidade', label: 'Data de validade', type: 'date' },
   ],
   usuarios: [
     { key: 'nome', label: 'Nome', type: 'text', required: true },
     { key: 'email', label: 'E-mail', type: 'email', required: true },
-    { key: 'senha', label: 'Senha', type: 'password', required: true, min: 6 },
+    { key: 'senha', label: 'Senha', type: 'password', required: true, min: 6, hideInTable: true },
   ],
 };
+
 @Component({
   selector: 'app-entity-page',
   imports: [ReactiveFormsModule],
@@ -69,10 +80,12 @@ export class EntityPage implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
   private sub?: Subscription;
+
   resource: Resource = 'tarefas';
   title = '';
   fields: Field[] = [];
   form = new FormGroup({});
+
   readonly items = signal<ApiEntity[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -81,19 +94,26 @@ export class EntityPage implements OnInit, OnDestroy {
   readonly search = signal('');
   readonly modal = signal(false);
   readonly detail = signal<ApiEntity | null>(null);
+  /** Filtro de status (só tarefas/orçamentos) */
+  readonly statusFilter = signal<StatusTarefa | ''>('');
+
   editingId: number | null = null;
+
   ngOnInit(): void {
     this.sub = this.route.data.subscribe((data) => {
       this.resource = data['entity'] as Resource;
       this.title = LABELS[this.resource];
       this.fields = FIELDS[this.resource];
       this.buildForm();
+      this.statusFilter.set('');
       this.load();
     });
   }
+
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
   }
+
   private buildForm(): void {
     const controls: Record<string, FormControl<string | number | null>> = {};
     for (const f of this.fields) {
@@ -106,9 +126,16 @@ export class EntityPage implements OnInit, OnDestroy {
     }
     this.form = new FormGroup(controls);
   }
+
   control(key: string): AbstractControl | null {
     return this.form.get(key);
   }
+
+  /** Campos que aparecem na tabela */
+  tableFields(): Field[] {
+    return this.fields.filter((f) => !f.hideInTable && f.key !== 'senha');
+  }
+
   load(): void {
     this.loading.set(true);
     this.error.set('');
@@ -123,17 +150,35 @@ export class EntityPage implements OnInit, OnDestroy {
       },
     });
   }
+
   filtered(): ApiEntity[] {
+    let list = this.items();
+
+    // Filtro de status (tarefas e orçamentos)
+    const st = this.statusFilter();
+    if (st && (this.resource === 'tarefas' || this.resource === 'orcamentos')) {
+      list = list.filter((i) => this.value(i, 'status') === st);
+    }
+
     const q = this.search().toLocaleLowerCase('pt-BR').trim();
-    return q
-      ? this.items().filter((i) => JSON.stringify(i).toLocaleLowerCase('pt-BR').includes(q))
-      : this.items();
+    if (!q) return list;
+    return list.filter((i) => JSON.stringify(i).toLocaleLowerCase('pt-BR').includes(q));
   }
+
+  /** Regra de negócio: produto com estoque baixo */
+  isLowStock(item: ApiEntity): boolean {
+    if (this.resource !== 'produtos') return false;
+    const p = item as Produto;
+    if (p.quantidadeEstoque == null || p.estoqueMinimo == null) return false;
+    return p.quantidadeEstoque <= p.estoqueMinimo;
+  }
+
   newItem(): void {
     this.editingId = null;
     this.form.reset();
     this.modal.set(true);
   }
+
   edit(item: ApiEntity): void {
     this.editingId = item.id;
     const values: Record<string, string | number | null> = {};
@@ -144,56 +189,66 @@ export class EntityPage implements OnInit, OnDestroy {
     this.form.reset(values);
     this.modal.set(true);
   }
+
   view(id: number): void {
-    this.api
-      .get(this.resource, id)
-      .subscribe({
-        next: (v) => this.detail.set(v),
-        error: () => this.error.set('Não foi possível consultar o registro.'),
-      });
+    this.api.get(this.resource, id).subscribe({
+      next: (v) => this.detail.set(v),
+      error: () => this.error.set('Não foi possível consultar o registro.'),
+    });
   }
+
   save(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     this.saving.set(true);
+    this.error.set('');
     const v = this.form.getRawValue() as Record<string, string | number | null>;
+
     let payload: TarefaRequest | OrcamentoRequest | ProdutoRequest | UsuarioRequest;
-    if (this.resource === 'produtos')
+
+    if (this.resource === 'produtos') {
       payload = {
         codigo: Number(v['codigo']),
         nome: String(v['nome']),
+        descricao: v['descricao'] ? String(v['descricao']) : null,
         preco: Number(v['preco']),
+        quantidadeEstoque:
+          v['quantidadeEstoque'] !== null && v['quantidadeEstoque'] !== ''
+            ? Number(v['quantidadeEstoque'])
+            : null,
+        estoqueMinimo:
+          v['estoqueMinimo'] !== null && v['estoqueMinimo'] !== ''
+            ? Number(v['estoqueMinimo'])
+            : null,
         dataValidade: v['dataValidade'] ? String(v['dataValidade']) : null,
       };
-    else if (this.resource === 'usuarios')
-      payload = { nome: String(v['nome']), email: String(v['email']), senha: String(v['senha']) };
-    else if (this.resource === 'orcamentos')
+    } else if (this.resource === 'usuarios') {
+      payload = {
+        nome: String(v['nome']),
+        email: String(v['email']),
+        senha: String(v['senha']),
+      };
+    } else {
+      // tarefas e orçamentos
       payload = {
         titulo: String(v['titulo']),
-        descricao: String(v['descricao'] ?? ''),
-        valor: Number(v['valor']),
+        descricao: v['descricao'] ? String(v['descricao']) : '',
+        valor: v['valor'] !== null && v['valor'] !== '' ? Number(v['valor']) : undefined,
         dataVencimento: String(v['dataVencimento']),
-      };
-    else if (this.resource === 'tarefas')
-      payload = {
-        titulo: String(v['titulo']),
-        descricao: String(v['descricao'] ?? ''),
-        valor: Number(v['valor']),
-        dataVencimento: String(v['dataVencimento']),
-      };
-    else
-      payload = {
-        titulo: String(v['titulo']),
-        descricao: String(v['descricao'] ?? ''),
-        valor: Number(v['valor']),
-        dataVencimento: String(v['dataVencimento']),
-      };
+      } as TarefaRequest | OrcamentoRequest;
+
+      if (this.resource === 'orcamentos') {
+        (payload as OrcamentoRequest).valor = Number(v['valor']);
+      }
+    }
+
     const request =
       this.editingId === null
         ? this.api.create(this.resource, payload)
         : this.api.update(this.resource, this.editingId, payload);
+
     request.subscribe({
       next: () => {
         this.saving.set(false);
@@ -211,6 +266,7 @@ export class EntityPage implements OnInit, OnDestroy {
       },
     });
   }
+
   remove(item: ApiEntity): void {
     if (!confirm(`Excluir o registro #${item.id}? Esta ação não pode ser desfeita.`)) return;
     this.api.delete(this.resource, item.id).subscribe({
@@ -221,6 +277,7 @@ export class EntityPage implements OnInit, OnDestroy {
       error: () => this.error.set('Não foi possível excluir o registro.'),
     });
   }
+
   changeStatus(item: ApiEntity, event: Event): void {
     if (this.resource !== 'tarefas') return;
     const status = (event.target as HTMLSelectElement).value as StatusTarefa;
@@ -232,23 +289,28 @@ export class EntityPage implements OnInit, OnDestroy {
       error: () => this.error.set('Não foi possível atualizar o status.'),
     });
   }
+
   value(item: ApiEntity, key: string): string | number | null {
     const record = item as unknown as Record<string, string | number | null>;
     return record[key] ?? null;
   }
+
   display(item: ApiEntity, key: string): string {
     const v = this.value(item, key);
     if (v === null || v === '') return '—';
-    if (key === 'preco' || key === 'valor')
+    if (key === 'preco' || key === 'valor') {
       return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
     return String(v);
   }
+
   statusLabel(v: string | number | null): string {
     return String(v)
       .replace('EM_ANDAMENTO', 'Em andamento')
       .replace('PENDENTE', 'Pendente')
       .replace('CONCLUIDA', 'Concluída');
   }
+
   private errorMessage(e: HttpErrorResponse): string {
     const body = e.error as ApiError | undefined;
     if (body?.campos) return Object.values(body.campos).join(' ');
