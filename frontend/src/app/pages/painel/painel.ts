@@ -1,55 +1,60 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
 import { TaskCard } from '../../components/task-card/task-card';
 import { TaskForm } from '../../components/task-form/task-form';
 import { SummaryCard } from '../../components/summary-card/summary-card';
-import { Sidebar } from '../../components/sidebar/sidebar';
-import { Header } from '../../components/header/header';
 import { TaskDetail } from '../../components/task-detail/task-detail';
+
 import { TaskService } from '../../services/task';
 import { Task } from '../../models/task.model';
 
 @Component({
   selector: 'app-painel',
-  imports: [TaskCard, TaskForm, SummaryCard, Sidebar, Header, TaskDetail],
+  standalone: true,
+  imports: [CommonModule, TaskCard, TaskForm, SummaryCard, TaskDetail],
   templateUrl: './painel.html',
   styleUrl: './painel.scss',
 })
 export class Painel {
-  private taskService = inject(TaskService);
-  protected readonly tasks = this.taskService.getTasks();
+  protected readonly taskService = inject(TaskService);
+
   protected taskEmEdicao: Task | null = null;
   protected filtroAtivo: 'Todas' | 'Alta' | 'Média' | 'Baixa' = 'Todas';
   protected taskEmDetalhe: Task | null = null;
 
-  protected get emAndamento(): number {
-    return this.tasks.filter(t => t.status === 'Em andamento').length;
-  }
+  // Reatividade usando o método do serviço
+  readonly tasks = computed(() => this.taskService.getTasks());
 
-  protected get concluidas(): number {
-    return this.tasks.filter(t => t.status === 'Concluída').length;
-  }
+  readonly emAndamento = computed(() =>
+    this.tasks().filter((t) => t.status === 'Em andamento').length
+  );
 
-  protected get aguardando(): number {
-    return this.tasks.filter(t => t.status === 'Aguardando').length;
-  }
+  readonly concluidas = computed(() =>
+    this.tasks().filter((t) => t.status === 'Concluída').length
+  );
 
-  protected get altaPrioridade(): number {
-    return this.tasks.filter(t => t.prioridade === 'Alta').length;
-  }
+  readonly aguardando = computed(() =>
+    this.tasks().filter((t) => t.status === 'Pendente').length
+  );
 
-  protected get tasksFiltradas(): Task[] {
+  readonly altaPrioridade = computed(() =>
+    this.tasks().filter((t) => t.prioridade === 'Alta').length
+  );
+
+  readonly tasksFiltradas = computed(() => {
     if (this.filtroAtivo === 'Todas') {
-      return this.tasks;
+      return this.tasks();
     }
-    return this.tasks.filter(t => t.prioridade === this.filtroAtivo);
-  }
+    return this.tasks().filter((t) => t.prioridade === this.filtroAtivo);
+  });
 
   protected setFiltro(prioridade: 'Todas' | 'Alta' | 'Média' | 'Baixa'): void {
     this.filtroAtivo = prioridade;
   }
 
   protected onExcluirTask(id: number): void {
-    this.taskService.deleteTask(id);
+    this.taskService.deleteTask(id).subscribe();
   }
 
   protected onEditarTask(task: Task): void {
@@ -66,11 +71,5 @@ export class Painel {
 
   protected onFecharDetalhes(): void {
     this.taskEmDetalhe = null;
-  }
-
-  protected onNavegar(secao: string): void {
-    if (secao === 'todas') {
-      this.filtroAtivo = 'Todas';
-    }
   }
 }

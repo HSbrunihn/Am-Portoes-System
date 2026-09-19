@@ -3,12 +3,14 @@ package com.example.amportoes.controller.response;
 import com.example.amportoes.entity.StatusTarefa;
 import com.example.amportoes.entity.Tarefa;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record TarefaResponse(
         Long id,
         String titulo,
         String descricao,
+        BigDecimal valor,
         LocalDate dataVencimento,
         StatusTarefa status) {
 
@@ -17,6 +19,7 @@ public record TarefaResponse(
                 tarefa.getId(),
                 tarefa.getTitulo(),
                 tarefa.getDescricao(),
+                tarefa.getValor(),
                 tarefa.getDataVencimento(),
                 tarefa.getStatus()
         );
