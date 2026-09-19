@@ -11,7 +11,7 @@
       <p><strong>Descrição:</strong> {{ task.descricao }}</p>
 
       <h6 class="mt-3">Produtos</h6>
-      @if (task.produtos.length > 0) {
+      @if (task?.produtos?.length) {
         <table class="table table-sm">
           <thead>
             <tr>

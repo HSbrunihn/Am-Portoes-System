@@ -6,10 +6,13 @@ import { EntityPage } from './pages/entity-page/entity-page';
 export const routes: Routes = [
   { path: 'login', component: LoginPage },
   { path: 'dashboard', component: Painel },
+
+  // As 3 telas de CRUD usam a mesma EntityPage
   { path: 'tarefas', component: EntityPage, data: { entity: 'tarefas' } },
   { path: 'produtos', component: EntityPage, data: { entity: 'produtos' } },
   { path: 'orcamentos', component: EntityPage, data: { entity: 'orcamentos' } },
   { path: 'usuarios', component: EntityPage, data: { entity: 'usuarios' } },
+
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: '**', redirectTo: 'login' },
 ];
