@@ -1,11 +1,23 @@
-# SO
-.DS_Store
-Thumbs.db
+# Java / Maven
+target/
+**/target/
 
-# IDEs
+# Node / Angular
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.angular/
+
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+
+# IDE
 .idea/
 .vscode/
 *.iml
 
-# Logs gerais
+# Logs
 *.log
