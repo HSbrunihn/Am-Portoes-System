@@ -1,3 +1,4 @@
+
 package com.example.amportoes.service;
 
 import com.example.amportoes.controller.request.ProdutoRequest;
@@ -20,6 +21,8 @@ public class ProdutoService {
         this.produtoRepository = produtoRepository;
     }
 
+    // CRUD legado utilizando ProdutoDTO
+
     public ProdutoDTO criar(ProdutoDTO dto) {
         return toDTO(produtoRepository.save(toEntity(dto)));
     }
@@ -38,44 +41,41 @@ public class ProdutoService {
     public ProdutoDTO atualizar(Long id, ProdutoDTO dto) {
         Produto produto = buscarEntidadePorId(id);
         atualizarEntidade(produto, dto);
+
         return toDTO(produtoRepository.save(produto));
     }
 
     public void excluir(Long id) {
         if (!produtoRepository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("Produto não foi encontrado");
+            throw new RecursoNaoEncontradoException(
+                    "Produto não foi encontrado"
+            );
         }
+
         produtoRepository.deleteById(id);
     }
 
     public List<ProdutoDTO> listarProdutosComBaixoEstoque() {
-        return produtoRepository.findAll().stream()
-                .filter(produto -> produto.getQuantidadeEstoque() != null
-                        && produto.getEstoqueMinimo() != null
-                        && produto.getQuantidadeEstoque() <= produto.getEstoqueMinimo())
+        return produtoRepository.findProdutosComBaixoEstoque()
+                .stream()
                 .map(this::toDTO)
                 .toList();
     }
 
-            public List<ProdutoResponse> listarProdutosComBaixoEstoqueResponse() {
-            return produtoRepository.findAll().stream()
-                .filter(produto -> produto.getQuantidadeEstoque() != null
-                    && produto.getEstoqueMinimo() != null
-                    && produto.getQuantidadeEstoque() <= produto.getEstoqueMinimo())
-                .map(ProdutoResponse::fromEntity)
-                .toList();
-            }
+    // CRUD atual utilizando ProdutoRequest e ProdutoResponse
 
     public ProdutoResponse criar(ProdutoRequest request) {
         Produto produto = request.toEntity();
         Produto salvo = produtoRepository.save(produto);
+
         return ProdutoResponse.fromEntity(salvo);
     }
 
     public List<ProdutoResponse> listar(String nome) {
-        List<Produto> produtos = (nome == null || nome.isBlank())
-                ? produtoRepository.findAll()
-                : produtoRepository.findByNomeContainingIgnoreCase(nome);
+        List<Produto> produtos =
+                (nome == null || nome.isBlank())
+                        ? produtoRepository.findAll()
+                        : produtoRepository.findByNomeContainingIgnoreCase(nome);
 
         return produtos.stream()
                 .map(ProdutoResponse::fromEntity)
@@ -84,9 +84,11 @@ public class ProdutoService {
 
     public ProdutoResponse buscarPorId(Long id) {
         Produto produto = buscarEntidadePorId(id);
+
         return ProdutoResponse.fromEntity(produto);
     }
 
+    @Transactional
     public ProdutoResponse atualizar(Long id, ProdutoRequest request) {
         Produto produto = buscarEntidadePorId(id);
 
@@ -99,6 +101,7 @@ public class ProdutoService {
         produto.setDataValidade(request.dataValidade());
 
         Produto atualizado = produtoRepository.save(produto);
+
         return ProdutoResponse.fromEntity(atualizado);
     }
 
@@ -106,14 +109,30 @@ public class ProdutoService {
         excluir(id);
     }
 
+    // Consulta de baixo estoque utilizando o PostgreSQL via JPQL
+
+    public List<ProdutoResponse> listarProdutosComBaixoEstoqueResponse() {
+        return produtoRepository.findProdutosComBaixoEstoque()
+                .stream()
+                .map(ProdutoResponse::fromEntity)
+                .toList();
+    }
+
+    // Métodos auxiliares
+
     private Produto buscarEntidadePorId(Long id) {
         return produtoRepository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto não foi encontrado"));
+                .orElseThrow(() ->
+                        new RecursoNaoEncontradoException(
+                                "Produto não foi encontrado"
+                        )
+                );
     }
 
     private Produto toEntity(ProdutoDTO dto) {
         Produto produto = new Produto();
         atualizarEntidade(produto, dto);
+
         return produto;
     }
 
