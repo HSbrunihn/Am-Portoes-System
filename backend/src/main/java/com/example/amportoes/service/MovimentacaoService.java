@@ -2,6 +2,7 @@
 package com.example.amportoes.service;
 
 import com.example.amportoes.dto.MovimentacaoDTO;
+import com.example.amportoes.dto.MovimentacaoResponseDTO;
 import com.example.amportoes.entity.MovimentacaoEstoque;
 import com.example.amportoes.entity.Produto;
 import com.example.amportoes.entity.TipoMovimentacao;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class MovimentacaoService {
@@ -27,11 +29,28 @@ public class MovimentacaoService {
         this.produtoRepository = produtoRepository;
     }
 
+    private MovimentacaoResponseDTO converterParaResponse(
+            MovimentacaoEstoque movimentacao) {
+
+        return new MovimentacaoResponseDTO(
+                movimentacao.getId(),
+                movimentacao.getProduto().getId(),
+                movimentacao.getProduto().getNome(),
+                movimentacao.getQuantidade(),
+                movimentacao.getTipo(),
+                movimentacao.getObservacao(),
+                movimentacao.getDataMovimentacao()
+        );
+    }
+
     @Transactional
-    public MovimentacaoEstoque registrarMovimentacao(MovimentacaoDTO dto) {
+    public MovimentacaoResponseDTO registrarMovimentacao(
+            MovimentacaoDTO dto) {
+
         Produto produto = produtoRepository.findById(dto.getProdutoId())
                 .orElseThrow(() ->
-                        new RecursoNaoEncontradoException("Produto não encontrado"));
+                        new RecursoNaoEncontradoException(
+                                "Produto não encontrado"));
 
         if (dto.getTipo() == TipoMovimentacao.SAIDA) {
             if (produto.getQuantidadeEstoque() == null
@@ -68,6 +87,33 @@ public class MovimentacaoService {
                         : LocalDateTime.now());
         movimentacao.setObservacao(dto.getObservacao());
 
-        return movimentacaoRepository.save(movimentacao);
+        MovimentacaoEstoque salva =
+                movimentacaoRepository.save(movimentacao);
+
+        return converterParaResponse(salva);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoResponseDTO> listarMovimentacoes() {
+        return movimentacaoRepository.findAll()
+                .stream()
+                .map(this::converterParaResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoResponseDTO> listarPorProduto(
+            Long produtoId) {
+
+        if (!produtoRepository.existsById(produtoId)) {
+            throw new RecursoNaoEncontradoException(
+                    "Produto não encontrado");
+        }
+
+        return movimentacaoRepository
+                .findByProdutoIdOrderByDataMovimentacaoDesc(produtoId)
+                .stream()
+                .map(this::converterParaResponse)
+                .toList();
     }
 }
