@@ -30,6 +30,15 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+
 		<!-- Driver de conexão com PostgreSQL -->
 <dependency>
     <groupId>org.postgresql</groupId>
