@@ -17,6 +17,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> tratarNaoEncontrado(RecursoNaoEncontradoException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(corpoErro(HttpStatus.NOT_FOUND, ex.getMessage()));
     }
+    
+    @ExceptionHandler(RegraNegocioException.class)
+public ResponseEntity<Map<String, Object>> tratarRegraNegocio(
+        RegraNegocioException ex) {
+
+    System.out.println(">>> GlobalExceptionHandler recebeu: " + ex.getMessage());
+
+    return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(corpoErro(HttpStatus.BAD_REQUEST, ex.getMessage()));
+}
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> tratarValidacao(MethodArgumentNotValidException ex) {

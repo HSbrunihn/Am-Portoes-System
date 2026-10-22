@@ -1,3 +1,4 @@
+
 package com.example.amportoes.dto;
 
 import com.example.amportoes.entity.TipoMovimentacao;
