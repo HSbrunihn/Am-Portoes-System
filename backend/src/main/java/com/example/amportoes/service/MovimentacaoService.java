@@ -1,9 +1,12 @@
+
 package com.example.amportoes.service;
 
 import com.example.amportoes.dto.MovimentacaoDTO;
 import com.example.amportoes.entity.MovimentacaoEstoque;
 import com.example.amportoes.entity.Produto;
 import com.example.amportoes.entity.TipoMovimentacao;
+import com.example.amportoes.exception.RecursoNaoEncontradoException;
+import com.example.amportoes.exception.RegraNegocioException;
 import com.example.amportoes.repository.MovimentacaoRepository;
 import com.example.amportoes.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
@@ -17,8 +20,9 @@ public class MovimentacaoService {
     private final MovimentacaoRepository movimentacaoRepository;
     private final ProdutoRepository produtoRepository;
 
-    public MovimentacaoService(MovimentacaoRepository movimentacaoRepository,
-                              ProdutoRepository produtoRepository) {
+    public MovimentacaoService(
+            MovimentacaoRepository movimentacaoRepository,
+            ProdutoRepository produtoRepository) {
         this.movimentacaoRepository = movimentacaoRepository;
         this.produtoRepository = produtoRepository;
     }
@@ -26,17 +30,30 @@ public class MovimentacaoService {
     @Transactional
     public MovimentacaoEstoque registrarMovimentacao(MovimentacaoDTO dto) {
         Produto produto = produtoRepository.findById(dto.getProdutoId())
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+                .orElseThrow(() ->
+                        new RecursoNaoEncontradoException("Produto não encontrado"));
 
         if (dto.getTipo() == TipoMovimentacao.SAIDA) {
-            if (produto.getQuantidadeEstoque() == null || produto.getQuantidadeEstoque() < dto.getQuantidade()) {
-                throw new IllegalArgumentException("Estoque insuficiente para saída");
+            if (produto.getQuantidadeEstoque() == null
+                    || produto.getQuantidadeEstoque() < dto.getQuantidade()) {
+                throw new RegraNegocioException(
+                        "Estoque insuficiente para saída");
             }
-            produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - dto.getQuantidade());
+
+            produto.setQuantidadeEstoque(
+                    produto.getQuantidadeEstoque() - dto.getQuantidade());
+
         } else if (dto.getTipo() == TipoMovimentacao.ENTRADA) {
-            produto.setQuantidadeEstoque((produto.getQuantidadeEstoque() == null ? 0 : produto.getQuantidadeEstoque()) + dto.getQuantidade());
+            int estoqueAtual = produto.getQuantidadeEstoque() == null
+                    ? 0
+                    : produto.getQuantidadeEstoque();
+
+            produto.setQuantidadeEstoque(
+                    estoqueAtual + dto.getQuantidade());
+
         } else {
-            throw new RuntimeException("Tipo de movimentação inválido");
+            throw new RegraNegocioException(
+                    "Tipo de movimentação inválido");
         }
 
         produtoRepository.save(produto);
@@ -45,7 +62,10 @@ public class MovimentacaoService {
         movimentacao.setProduto(produto);
         movimentacao.setQuantidade(dto.getQuantidade());
         movimentacao.setTipo(dto.getTipo());
-        movimentacao.setDataMovimentacao(dto.getDataMovimentacao() != null ? dto.getDataMovimentacao() : LocalDateTime.now());
+        movimentacao.setDataMovimentacao(
+                dto.getDataMovimentacao() != null
+                        ? dto.getDataMovimentacao()
+                        : LocalDateTime.now());
         movimentacao.setObservacao(dto.getObservacao());
 
         return movimentacaoRepository.save(movimentacao);
