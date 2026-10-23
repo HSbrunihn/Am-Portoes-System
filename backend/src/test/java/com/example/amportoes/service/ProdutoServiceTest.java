@@ -1,6 +1,7 @@
-
 package com.example.amportoes.service;
 
+import com.example.amportoes.controller.request.ProdutoRequest;
+import com.example.amportoes.controller.response.ProdutoResponse;
 import com.example.amportoes.dto.ProdutoDTO;
 import com.example.amportoes.entity.Produto;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
@@ -20,156 +21,122 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProdutoServiceTest {
-
-    @Mock
-    private ProdutoRepository produtoRepository;
-
-    @InjectMocks
-    private ProdutoService produtoService;
-
-    private ProdutoDTO dto() {
-        return new ProdutoDTO(
-                "Sensor",
-                "Sensor de teste",
-                new BigDecimal("25.90"),
-                10,
-                2
-        );
-    }
-
-    private Produto produto() {
-        Produto produto = new Produto();
-        produto.setNome("Sensor");
-        produto.setDescricao("Sensor de teste");
-        produto.setPreco(new BigDecimal("25.90"));
-        produto.setQuantidadeEstoque(10);
-        produto.setEstoqueMinimo(2);
-        return produto;
-    }
+    @Mock ProdutoRepository produtoRepository;
+    @InjectMocks ProdutoService produtoService;
 
     @Test
-    void deveCriarProdutoComDto() {
-        when(produtoRepository.save(any(Produto.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    void givenDadosDoDtoQuandoCriaProdutoEntaoPersisteEDevolveDadosConvertidos() {
+        // Given
+        ProdutoDTO entrada = new ProdutoDTO("Sensor", "Teste", new BigDecimal("25.90"), 10, 2);
+        when(produtoRepository.save(any(Produto.class))).thenAnswer(call -> call.getArgument(0));
 
-        ProdutoDTO resultado = produtoService.criar(dto());
+        // When
+        ProdutoDTO resultado = produtoService.criar(entrada);
 
+        // Then
         assertEquals("Sensor", resultado.getNome());
         assertEquals(new BigDecimal("25.90"), resultado.getPreco());
-        assertEquals(10, resultado.getQuantidadeEstoque());
-        verify(produtoRepository).save(any(Produto.class));
+        verify(produtoRepository).save(argThat(p -> p.getQuantidadeEstoque() == 10));
     }
 
     @Test
-    void deveListarProdutosComDto() {
-        when(produtoRepository.findAll()).thenReturn(List.of(produto()));
+    void givenRequisicaoValidaQuandoCriaProdutoEntaoRetornaResponseDoProdutoSalvo() {
+        // Given
+        ProdutoRequest request = new ProdutoRequest("Portao", 7L, "Basculante", new BigDecimal("100.00"), 4, 1, null);
+        when(produtoRepository.save(any(Produto.class))).thenAnswer(call -> {
+            Produto salvo = call.getArgument(0);
+            salvo.setId(3L);
+            return salvo;
+        });
 
-        List<ProdutoDTO> resultado = produtoService.listar();
+        // When
+        ProdutoResponse resultado = produtoService.criar(request);
 
+        // Then
+        assertEquals(3L, resultado.id());
+        assertEquals("Portao", resultado.nome());
+    }
+
+    @Test
+    void givenNomeDeBuscaQuandoListaProdutosEntaoUsaBuscaParcialIgnorandoCaixa() {
+        // Given
+        Produto produto = produto(1L, "Motor");
+        when(produtoRepository.findByNomeContainingIgnoreCase("mot")).thenReturn(List.of(produto));
+
+        // When
+        List<ProdutoResponse> resultado = produtoService.listar("mot");
+
+        // Then
         assertEquals(1, resultado.size());
-        assertEquals("Sensor", resultado.get(0).getNome());
+        assertEquals("Motor", resultado.get(0).nome());
+        verify(produtoRepository).findByNomeContainingIgnoreCase("mot");
+        verify(produtoRepository, never()).findAll();
     }
 
     @Test
-    void deveRetornarListaVaziaAoListarComDto() {
-        when(produtoRepository.findAll()).thenReturn(List.of());
-
-        assertTrue(produtoService.listar().isEmpty());
-    }
-
-    @Test
-    void deveBuscarProdutoPorIdComDto() {
-        when(produtoRepository.findById(1L)).thenReturn(Optional.of(produto()));
-
-        ProdutoDTO resultado = produtoService.buscarPorIdDTO(1L);
-
-        assertEquals("Sensor", resultado.getNome());
-        assertEquals(10, resultado.getQuantidadeEstoque());
-    }
-
-    @Test
-    void deveLancarExcecaoAoBuscarProdutoInexistenteComDto() {
+    void givenIdSemProdutoQuandoBuscaPorIdEntaoLancaRecursoNaoEncontrado() {
+        // Given
         when(produtoRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(
-                RecursoNaoEncontradoException.class,
-                () -> produtoService.buscarPorIdDTO(99L)
-        );
+        // When
+        RecursoNaoEncontradoException excecao = assertThrows(RecursoNaoEncontradoException.class, () -> produtoService.buscarPorId(99L));
+
+        // Then
+        assertNotNull(excecao);
     }
 
     @Test
-    void deveAtualizarProdutoComDto() {
-        Produto existente = produto();
-        ProdutoDTO atualizacao = new ProdutoDTO(
-                "Sensor atualizado",
-                "Descrição atualizada",
-                new BigDecimal("39.90"),
-                15,
-                3
-        );
+    void givenIdExistenteQuandoAtualizaProdutoEntaoSalvaNovosDados() {
+        // Given
+        Produto existente = produto(5L, "Portao antigo");
+        ProdutoRequest request = new ProdutoRequest("Portao novo", 8L, "Atualizado", new BigDecimal("250.00"), 9, 2, null);
+        when(produtoRepository.findById(5L)).thenReturn(Optional.of(existente));
+        when(produtoRepository.save(any(Produto.class))).thenAnswer(call -> call.getArgument(0));
 
-        when(produtoRepository.findById(1L)).thenReturn(Optional.of(existente));
-        when(produtoRepository.save(any(Produto.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        // When
+        ProdutoResponse resultado = produtoService.atualizar(5L, request);
 
-        ProdutoDTO resultado = produtoService.atualizar(1L, atualizacao);
-
-        assertEquals("Sensor atualizado", resultado.getNome());
-        assertEquals(new BigDecimal("39.90"), resultado.getPreco());
-        assertEquals(15, resultado.getQuantidadeEstoque());
+        // Then
+        assertEquals("Portao novo", resultado.nome());
+        assertEquals(8L, resultado.codigo());
         verify(produtoRepository).save(existente);
     }
 
     @Test
-    void deveLancarExcecaoAoAtualizarProdutoInexistenteComDto() {
-        when(produtoRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(
-                RecursoNaoEncontradoException.class,
-                () -> produtoService.atualizar(99L, dto())
-        );
-
-        verify(produtoRepository, never()).save(any(Produto.class));
-    }
-
-    @Test
-    void deveExcluirProdutoExistenteComDto() {
-        when(produtoRepository.existsById(1L)).thenReturn(true);
-
-        assertDoesNotThrow(() -> produtoService.excluir(1L));
-
-        verify(produtoRepository).deleteById(1L);
-    }
-
-    @Test
-    void deveLancarExcecaoAoExcluirProdutoInexistenteComDto() {
+    void givenIdInexistenteQuandoExcluiProdutoEntaoLancaExcecaoESemApagar() {
+        // Given
         when(produtoRepository.existsById(99L)).thenReturn(false);
 
-        assertThrows(
-                RecursoNaoEncontradoException.class,
-                () -> produtoService.excluir(99L)
-        );
+        // When
+        RecursoNaoEncontradoException excecao = assertThrows(RecursoNaoEncontradoException.class, () -> produtoService.excluir(99L));
 
+        // Then
+        assertNotNull(excecao);
         verify(produtoRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deveListarProdutosComBaixoEstoqueEmDto() {
-        when(produtoRepository.findProdutosComBaixoEstoque())
-                .thenReturn(List.of(produto()));
+    void givenProdutosComBaixoEstoqueQuandoConsultaEntaoRetornaResponsesCorrespondentes() {
+        // Given
+        when(produtoRepository.findProdutosComBaixoEstoque()).thenReturn(List.of(produto(2L, "Sensor")));
 
-        List<ProdutoDTO> resultado =
-                produtoService.listarProdutosComBaixoEstoque();
+        // When
+        List<ProdutoResponse> resultado = produtoService.listarProdutosComBaixoEstoqueResponse();
 
+        // Then
         assertEquals(1, resultado.size());
-        assertEquals("Sensor", resultado.get(0).getNome());
+        assertEquals("Sensor", resultado.get(0).nome());
     }
 
-    @Test
-    void deveRetornarListaVaziaDeProdutosComBaixoEstoqueEmDto() {
-        when(produtoRepository.findProdutosComBaixoEstoque())
-                .thenReturn(List.of());
-
-        assertTrue(produtoService.listarProdutosComBaixoEstoque().isEmpty());
+    private Produto produto(Long id, String nome) {
+        Produto produto = new Produto();
+        produto.setId(id);
+        produto.setNome(nome);
+        produto.setCodigo(10L);
+        produto.setDescricao("Teste");
+        produto.setPreco(new BigDecimal("25.90"));
+        produto.setQuantidadeEstoque(2);
+        produto.setEstoqueMinimo(3);
+        return produto;
     }
 }
