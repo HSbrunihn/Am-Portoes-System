@@ -1,21 +1,36 @@
+
 package com.example.amportoes.controller.request;
 
 import com.example.amportoes.entity.Produto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record ProdutoRequest(
-        @NotBlank(message = "O nome é obrigatório") String nome,
-        @NotNull(message = "O código é obrigatório") Long codigo,
+        @NotBlank(message = "O nome é obrigatório")
+        String nome,
+
+        @NotNull(message = "O código é obrigatório")
+        Long codigo,
+
         String descricao,
+
         @NotNull(message = "O preço é obrigatório")
-        @Positive(message = "O preço deve ser maior que zero") BigDecimal preco,
+        @Positive(message = "O preço deve ser maior que zero")
+        BigDecimal preco,
+
+        @PositiveOrZero(
+                message = "A quantidade em estoque não pode ser negativa")
         Integer quantidadeEstoque,
+
+        @PositiveOrZero(
+                message = "O estoque mínimo não pode ser negativo")
         Integer estoqueMinimo,
+
         LocalDate dataValidade
 ) {
     public Produto toEntity() {
