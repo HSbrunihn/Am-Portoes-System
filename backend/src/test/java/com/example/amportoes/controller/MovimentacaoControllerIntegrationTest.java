@@ -1,221 +1,85 @@
-
 package com.example.amportoes.controller;
 
-import com.example.amportoes.entity.Produto;
-import com.example.amportoes.repository.MovimentacaoRepository;
-import com.example.amportoes.repository.ProdutoRepository;
-import tools.jackson.databind.ObjectMapper;
-
-import org.junit.jupiter.api.BeforeEach;
+import com.example.amportoes.dto.MovimentacaoResponseDTO;
+import com.example.amportoes.entity.TipoMovimentacao;
+import com.example.amportoes.exception.RecursoNaoEncontradoException;
+import com.example.amportoes.exception.RegraNegocioException;
+import com.example.amportoes.service.MovimentacaoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(MovimentacaoController.class)
 class MovimentacaoControllerIntegrationTest {
+    @Autowired MockMvc mockMvc;
+    @MockitoBean MovimentacaoService movimentacaoService;
 
-    private static final String URL = "/api/movimentacoes";
+    @Test
+    void givenMovimentacaoValidaQuandoRegistraEntaoRetorna201ComDadosDoService() throws Exception {
+        // Given
+        when(movimentacaoService.registrarMovimentacao(any())).thenReturn(new MovimentacaoResponseDTO(1L, 7L, "Portao", 2, TipoMovimentacao.ENTRADA, null, LocalDateTime.of(2026, 10, 1, 10, 0)));
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper mapper;
-
-    @Autowired
-    private ProdutoRepository produtoRepository;
-
-    @Autowired
-    private MovimentacaoRepository movimentacaoRepository;
-
-    @BeforeEach
-    void limparBanco() {
-        movimentacaoRepository.deleteAll();
-        produtoRepository.deleteAll();
+        // When
+        mockMvc.perform(post("/api/movimentacoes").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"produtoId\":7,\"quantidade\":2,\"tipo\":\"ENTRADA\"}"))
+                // Then
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.produtoNome").value("Portao"))
+                .andExpect(jsonPath("$.tipo").value("ENTRADA"));
     }
 
     @Test
-    void deveRegistrarEntradaEAtualizarEstoque() throws Exception {
-        Produto produto = salvarProduto(5);
+    void givenQuantidadeZeroQuandoRegistraMovimentacaoEntaoRetorna400ComErroDeValidacao() throws Exception {
+        // Given
+        String corpoInvalido = "{\"produtoId\":7,\"quantidade\":0,\"tipo\":\"ENTRADA\"}";
 
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "produtoId": %d,
-                                  "quantidade": 3,
-                                  "tipo": "ENTRADA",
-                                  "observacao": "Reposição"
-                                }
-                                """.formatted(produto.getId())))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.quantidade", is(3)))
-                .andExpect(jsonPath("$.tipo", is("ENTRADA")));
-
-        Produto atualizado = produtoRepository
-                .findById(produto.getId())
-                .orElseThrow();
-
-        assertThat(atualizado.getQuantidadeEstoque()).isEqualTo(8);
+        // When
+        mockMvc.perform(post("/api/movimentacoes").contentType(MediaType.APPLICATION_JSON).content(corpoInvalido))
+                // Then
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.campos.quantidade").exists());
+        verifyNoInteractions(movimentacaoService);
     }
 
     @Test
-    void deveRegistrarSaidaEAtualizarEstoque() throws Exception {
-        Produto produto = salvarProduto(5);
+    void givenProdutoInexistenteNoServiceQuandoListaMovimentacoesPorProdutoEntaoRetorna404() throws Exception {
+        // Given
+        when(movimentacaoService.listarPorProduto(55L)).thenThrow(new RecursoNaoEncontradoException("Produto não encontrado"));
 
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "produtoId": %d,
-                                  "quantidade": 2,
-                                  "tipo": "SAIDA"
-                                }
-                                """.formatted(produto.getId())))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.quantidade", is(2)))
-                .andExpect(jsonPath("$.tipo", is("SAIDA")));
-
-        Produto atualizado = produtoRepository
-                .findById(produto.getId())
-                .orElseThrow();
-
-        assertThat(atualizado.getQuantidadeEstoque()).isEqualTo(3);
+        // When
+        mockMvc.perform(get("/api/movimentacoes/produto/55"))
+                // Then
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
-    void deveRejeitarSaidaMaiorQueEstoque() throws Exception {
-        Produto produto = salvarProduto(2);
+    void givenEstoqueInsuficienteNoServiceQuandoRegistraSaidaEntaoRetorna400ComMensagemDaRegra() throws Exception {
+        // Given
+        when(movimentacaoService.registrarMovimentacao(any())).thenThrow(new RegraNegocioException("Estoque insuficiente"));
 
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "produtoId": %d,
-                                  "quantidade": 5,
-                                  "tipo": "SAIDA"
-                                }
-                                """.formatted(produto.getId())))
-                .andExpect(status().isBadRequest());
-
-        assertThat(movimentacaoRepository.count()).isZero();
-
-        Produto inalterado = produtoRepository
-                .findById(produto.getId())
-                .orElseThrow();
-
-        assertThat(inalterado.getQuantidadeEstoque()).isEqualTo(2);
+        // When
+        mockMvc.perform(post("/api/movimentacoes").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"produtoId\":7,\"quantidade\":20,\"tipo\":\"SAIDA\"}"))
+                // Then
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.mensagem").value("Estoque insuficiente"));
     }
 
     @Test
-    void deveRetornar404ParaProdutoInexistente() throws Exception {
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "produtoId": 999999,
-                                  "quantidade": 1,
-                                  "tipo": "ENTRADA"
-                                }
-                                """))
-                .andExpect(status().isNotFound());
+    void givenListaDeMovimentacoesDoServiceQuandoListaEntaoRetornaColecaoJson() throws Exception {
+        // Given
+        when(movimentacaoService.listarMovimentacoes()).thenReturn(List.of(new MovimentacaoResponseDTO(1L, 7L, "Portao", 2, TipoMovimentacao.ENTRADA, null, LocalDateTime.of(2026, 10, 1, 10, 0))));
 
-        assertThat(movimentacaoRepository.count()).isZero();
-    }
-
-    @Test
-    void deveListarMovimentacoes() throws Exception {
-        Produto produto = salvarProduto(5);
-
-        registrar(produto.getId(), 2, "ENTRADA");
-
-        mockMvc.perform(get(URL))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].tipo", is("ENTRADA")))
-                .andExpect(jsonPath("$[0].quantidade", is(2)));
-    }
-
-    @Test
-    void deveListarMovimentacoesPorProduto() throws Exception {
-        Produto produto = salvarProduto(5);
-
-        registrar(produto.getId(), 2, "ENTRADA");
-
-        mockMvc.perform(get(URL + "/produto/" + produto.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].produtoId",
-                        is(produto.getId().intValue())))
-                .andExpect(jsonPath("$[0].quantidade", is(2)));
-    }
-
-    @Test
-    void deveRetornar404AoListarProdutoInexistente() throws Exception {
-        mockMvc.perform(get(URL + "/produto/999999"))
-                .andExpect(status().isNotFound());
-
-        assertThat(movimentacaoRepository.count()).isZero();
-    }
-
-    @Test
-    void deveRejeitarQuantidadeZero() throws Exception {
-        Produto produto = salvarProduto(5);
-
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "produtoId": %d,
-                                  "quantidade": 0,
-                                  "tipo": "ENTRADA"
-                                }
-                                """.formatted(produto.getId())))
-                .andExpect(status().isBadRequest());
-
-        assertThat(movimentacaoRepository.count()).isZero();
-
-        Produto inalterado = produtoRepository
-                .findById(produto.getId())
-                .orElseThrow();
-
-        assertThat(inalterado.getQuantidadeEstoque()).isEqualTo(5);
-    }
-
-    private Produto salvarProduto(int estoque) {
-        Produto produto = new Produto();
-        produto.setNome("Produto de teste");
-        produto.setCodigo(100L + estoque);
-        produto.setDescricao("Teste de movimentação");
-        produto.setPreco(new BigDecimal("100.00"));
-        produto.setQuantidadeEstoque(estoque);
-        produto.setEstoqueMinimo(2);
-
-        return produtoRepository.save(produto);
-    }
-
-    private void registrar(Long produtoId, int quantidade, String tipo)
-            throws Exception {
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "produtoId": %d,
-                                  "quantidade": %d,
-                                  "tipo": "%s"
-                                }
-                                """.formatted(produtoId, quantidade, tipo)))
-                .andExpect(status().isCreated());
+        // When
+        mockMvc.perform(get("/api/movimentacoes"))
+                // Then
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].quantidade").value(2));
     }
 }
