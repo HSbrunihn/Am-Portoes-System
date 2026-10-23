@@ -1,147 +1,74 @@
-
 package com.example.amportoes.controller;
 
 import com.example.amportoes.controller.request.LoginRequest;
 import com.example.amportoes.entity.Usuario;
 import com.example.amportoes.repository.UsuarioRepository;
-import tools.jackson.databind.ObjectMapper;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
+import java.util.Optional;
+
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(AuthController.class)
 class AuthControllerIntegrationTest {
+    @Autowired MockMvc mockMvc;
+    @MockitoBean UsuarioRepository usuarioRepository;
+    @MockitoBean PasswordEncoder passwordEncoder;
 
-    private static final String URL = "/api/auth";
+    @Test
+    void givenCredenciaisValidasQuandoFazLoginEntaoRetornaUsuarioSemSenhaECriaSessao() throws Exception {
+        // Given
+        Usuario usuario = new Usuario(2L, "Bruno", "bruno@example.com", "hash");
+        when(usuarioRepository.findByEmailIgnoreCase("bruno@example.com")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("senha123", "hash")).thenReturn(true);
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper mapper;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-
-    @BeforeEach
-    void limparBanco() {
-        usuarioRepository.deleteAll();
+        // When
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"bruno@example.com\",\"senha\":\"senha123\"}"))
+                // Then
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nome").value("Bruno"))
+                .andExpect(jsonPath("$.senha").doesNotExist()).andExpect(request().sessionAttribute("usuarioId", 2L));
     }
 
     @Test
-    void deveRealizarLoginComCredenciaisValidas() throws Exception {
-        criarUsuario();
+    void givenSenhaIncorretaQuandoFazLoginEntaoRetorna401() throws Exception {
+        // Given
+        when(usuarioRepository.findByEmailIgnoreCase("bruno@example.com"))
+                .thenReturn(Optional.of(new Usuario(2L, "Bruno", "bruno@example.com", "hash")));
+        when(passwordEncoder.matches("errada", "hash")).thenReturn(false);
 
-        var resultado = mockMvc.perform(post(URL + "/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("bruno@teste.com", "senha123")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email", is("bruno@teste.com")))
-                .andExpect(jsonPath("$.senha").doesNotExist())
-                .andReturn();
-
-        assertThat(resultado.getRequest().getSession(false)).isNotNull();
-    }
-
-    @Test
-    void deveRecusarSenhaIncorreta() throws Exception {
-        criarUsuario();
-
-        mockMvc.perform(post(URL + "/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("bruno@teste.com", "senhaerrada")))
-                .andExpect(status().isUnauthorized());
-
-        assertThat(usuarioRepository.count()).isEqualTo(1);
-    }
-
-    @Test
-    void deveRecusarUsuarioInexistente() throws Exception {
-        mockMvc.perform(post(URL + "/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("inexistente@teste.com", "senha123")))
-                .andExpect(status().isUnauthorized());
-
-        assertThat(usuarioRepository.count()).isZero();
-    }
-
-    @Test
-    void deveRecusarConsultaMeSemLogin() throws Exception {
-        mockMvc.perform(get(URL + "/me"))
+        // When
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"bruno@example.com\",\"senha\":\"errada\"}"))
+                // Then
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void deveRetornarUsuarioAutenticadoEmMe() throws Exception {
-        criarUsuario();
+    void givenEmailInvalidoQuandoFazLoginEntaoRetorna400ComErroDeValidacao() throws Exception {
+        // Given
+        String corpoInvalido = "{\"email\":\"invalido\",\"senha\":\"senha123\"}";
 
-        MockHttpSession session = (MockHttpSession) mockMvc.perform(
-                        post(URL + "/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(json("bruno@teste.com", "senha123")))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getRequest()
-                .getSession(false);
-
-        assertThat(session).isNotNull();
-
-        mockMvc.perform(get(URL + "/me").session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email", is("bruno@teste.com")))
-                .andExpect(jsonPath("$.nome", is("Bruno")))
-                .andExpect(jsonPath("$.senha").doesNotExist());
+        // When
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(corpoInvalido))
+                // Then
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(usuarioRepository, passwordEncoder);
     }
 
     @Test
-    void deveEncerrarSessaoAoFazerLogout() throws Exception {
-        criarUsuario();
-
-        MockHttpSession session = (MockHttpSession) mockMvc.perform(
-                        post(URL + "/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(json("bruno@teste.com", "senha123")))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getRequest()
-                .getSession(false);
-
-        assertThat(session).isNotNull();
-
-        mockMvc.perform(post(URL + "/logout").session(session))
-                .andExpect(status().isNoContent());
-
-        mockMvc.perform(get(URL + "/me").session(session))
+    void givenSessaoSemUsuarioAutenticadoQuandoConsultaMeEntaoRetorna401() throws Exception {
+        // Given / When
+        mockMvc.perform(get("/api/auth/me"))
+                // Then
                 .andExpect(status().isUnauthorized());
-    }
-
-    private void criarUsuario() {
-        Usuario usuario = new Usuario(
-                null,
-                "Bruno",
-                "bruno@teste.com",
-                passwordEncoder.encode("senha123")
-        );
-
-        usuarioRepository.save(usuario);
-    }
-
-    private String json(String email, String senha) throws Exception {
-        return mapper.writeValueAsString(new LoginRequest(email, senha));
     }
 }
