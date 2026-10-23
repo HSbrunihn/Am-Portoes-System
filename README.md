@@ -6,14 +6,14 @@ Sistema de gestão para instalação e manutenção de portões, com dashboard f
 
 ```
 Am-Portoes-System/
-├── backend/     # API REST (Java 17 + Spring Boot + JPA + H2)
+├── backend/     # API REST (Java 25 LTS + Spring Boot + JPA + H2)
 ├── frontend/    # Dashboard (Angular + TypeScript)
 └── docs/        # Documentação, diagramas, decisões de arquitetura
 ```
 
 ## Backend
 
-Java 17, Spring Boot, Spring Data JPA, H2, Lombok.
+Java 25 LTS, Spring Boot, Spring Data JPA, H2, Lombok.
 
 ```bash
 cd backend
