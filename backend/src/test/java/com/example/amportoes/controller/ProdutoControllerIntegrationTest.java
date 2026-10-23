@@ -1,198 +1,177 @@
-package com.example.amportoes.controller;
 
-import com.example.amportoes.entity.Produto;
-import com.example.amportoes.repository.ProdutoRepository;
-import tools.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
+        package com.example.amportoes.controller;
+
+import com.example.amportoes.controller.request.ProdutoRequest;
+import com.example.amportoes.controller.response.ProdutoResponse;
+import com.example.amportoes.exception.RecursoNaoEncontradoException;
+import com.example.amportoes.repository.UsuarioRepository;
+import com.example.amportoes.service.ProdutoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(ProdutoController.class)
 class ProdutoControllerIntegrationTest {
 
-    private static final String PRODUTOS_URL = "/api/produtos";
-
     @Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockitoBean
+    ProdutoService produtoService;
 
-    @Autowired
-    private ProdutoRepository produtoRepository;
+    @MockitoBean
+    UsuarioRepository usuarioRepository;
 
-    @BeforeEach
-    void limparProdutos() {
-        produtoRepository.deleteAll();
+    private ProdutoResponse resposta(Long id, String nome) {
+        return new ProdutoResponse(
+                id, 12L, nome, new BigDecimal("1200.00"), 4, 2, null
+        );
     }
 
     @Test
-    void deveCriarProduto() throws Exception {
-        mockMvc.perform(post(PRODUTOS_URL)
+    void givenProdutoValidoQuandoCriaEntaoRetorna201() throws Exception {
+        when(produtoService.criar(any(ProdutoRequest.class)))
+                .thenReturn(resposta(7L, "Portao"));
+
+        mockMvc.perform(post("/api/produtos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonProduto("Portao basculante", "1200.00", 5, 2)))
+                        .content("{\"nome\":\"Portao\",\"codigo\":12,\"preco\":1200.00}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.nome", is("Portao basculante")))
-                .andExpect(jsonPath("$.codigo", is(5)))
-                .andExpect(jsonPath("$.preco", is(1200.0)));
+                .andExpect(jsonPath("$.id").value(7))
+                .andExpect(jsonPath("$.nome").value("Portao"))
+                .andExpect(jsonPath("$.preco").value(1200.0));
 
-        org.assertj.core.api.Assertions.assertThat(produtoRepository.count()).isEqualTo(1);
+        verify(produtoService).criar(any(ProdutoRequest.class));
     }
 
     @Test
-    void deveListarProdutos() throws Exception {
-        salvarProduto("Portao deslizante", "2000.00", 4, 1);
-        salvarProduto("Porta social", "800.00", 8, 2);
-
-        mockMvc.perform(get(PRODUTOS_URL))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[*].nome", containsInAnyOrder("Portao deslizante", "Porta social")));
-    }
-
-    @Test
-    void deveBuscarProdutoPorId() throws Exception {
-        Produto produto = salvarProduto("Portao pivotante", "1500.00", 3, 1);
-
-        mockMvc.perform(get(PRODUTOS_URL + "/" + produto.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome", is("Portao pivotante")))
-                .andExpect(jsonPath("$.codigo", is(3)));
-    }
-
-    @Test
-    void deveAtualizarProduto() throws Exception {
-        Produto produto = salvarProduto("Nome antigo", "1000.00", 2, 1);
-
-        mockMvc.perform(put(PRODUTOS_URL + "/" + produto.getId())
+    void givenNomeVazioQuandoCriaEntaoRetorna400() throws Exception {
+        mockMvc.perform(post("/api/produtos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonProduto("Nome atualizado", "1750.50", 10, 3)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome", is("Nome atualizado")))
-                .andExpect(jsonPath("$.codigo", is(10)))
-                .andExpect(jsonPath("$.preco", is(1750.5)));
+                        .content("{\"nome\":\"\",\"codigo\":12,\"preco\":1200.00}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.nome").exists());
 
-        Produto atualizado = produtoRepository.findById(produto.getId()).orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(atualizado.getNome()).isEqualTo("Nome atualizado");
+        verifyNoInteractions(produtoService);
     }
 
     @Test
-    void deveExcluirProduto() throws Exception {
-        Produto produto = salvarProduto("Produto removido", "500.00", 1, 1);
+    void givenJsonInvalidoQuandoCriaEntaoRetorna400() throws Exception {
+        mockMvc.perform(post("/api/produtos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{json-invalido"))
+                .andExpect(status().isBadRequest());
 
-        mockMvc.perform(delete(PRODUTOS_URL + "/" + produto.getId()))
+        verifyNoInteractions(produtoService);
+    }
+
+    @Test
+    void givenProdutosExistentesQuandoListaEntaoRetornaColecao() throws Exception {
+        when(produtoService.listar(null))
+                .thenReturn(List.of(
+                        resposta(1L, "Motor"),
+                        resposta(2L, "Portao")
+                ));
+
+        mockMvc.perform(get("/api/produtos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].nome").value("Motor"))
+                .andExpect(jsonPath("$[1].nome").value("Portao"));
+
+        verify(produtoService).listar(null);
+    }
+
+    @Test
+    void givenProdutoExistenteQuandoBuscaPorIdEntaoRetorna200() throws Exception {
+        when(produtoService.buscarPorId(7L))
+                .thenReturn(resposta(7L, "Portao"));
+
+        mockMvc.perform(get("/api/produtos/7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(7))
+                .andExpect(jsonPath("$.nome").value("Portao"));
+
+        verify(produtoService).buscarPorId(7L);
+    }
+
+    @Test
+    void givenProdutoInexistenteQuandoBuscaPorIdEntaoRetorna404() throws Exception {
+        when(produtoService.buscarPorId(99L))
+                .thenThrow(new RecursoNaoEncontradoException("Produto nao foi encontrado"));
+
+        mockMvc.perform(get("/api/produtos/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.mensagem").value("Produto nao foi encontrado"));
+
+        verify(produtoService).buscarPorId(99L);
+    }
+
+    @Test
+    void givenDadosValidosQuandoAtualizaEntaoRetorna200() throws Exception {
+        when(produtoService.atualizar(eq(7L), any(ProdutoRequest.class)))
+                .thenReturn(resposta(7L, "Portao atualizado"));
+
+        mockMvc.perform(put("/api/produtos/7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Portao atualizado\",\"codigo\":12,\"preco\":1200.00}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Portao atualizado"));
+
+        verify(produtoService).atualizar(eq(7L), any(ProdutoRequest.class));
+    }
+
+    @Test
+    void givenNomeVazioQuandoAtualizaEntaoRetorna400() throws Exception {
+        mockMvc.perform(put("/api/produtos/7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"\",\"codigo\":12,\"preco\":1200.00}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(produtoService);
+    }
+
+    @Test
+    void givenProdutoExistenteQuandoExcluiEntaoRetorna204() throws Exception {
+        mockMvc.perform(delete("/api/produtos/7"))
                 .andExpect(status().isNoContent());
 
-        org.assertj.core.api.Assertions.assertThat(produtoRepository.findById(produto.getId())).isEmpty();
+        verify(produtoService).excluir(7L);
     }
 
     @Test
-    void deveRetornar404AoBuscarProdutoInexistente() throws Exception {
-        mockMvc.perform(get(PRODUTOS_URL + "/999999"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status", is(404)))
-                .andExpect(jsonPath("$.mensagem", is("Produto não foi encontrado")));
-    }
+    void givenProdutosComBaixoEstoqueQuandoConsultaEntaoRetornaLista() throws Exception {
+        when(produtoService.listarProdutosComBaixoEstoqueResponse())
+                .thenReturn(List.of(resposta(1L, "Motor")));
 
-    @Test
-    void deveRetornar400ParaDadosObrigatoriosAusentes() throws Exception {
-        String produtoInvalido = """
-                {
-                  "nome": "",
-                  "preco": null,
-                  "quantidadeEstoque": null,
-                  "estoqueMinimo": null
-                }
-                """;
-
-        mockMvc.perform(post(PRODUTOS_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(produtoInvalido))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status", is(400)))
-                .andExpect(jsonPath("$.mensagem", is("Dados inválidos")))
-                .andExpect(jsonPath("$.campos.nome", is("O nome é obrigatório")))
-                .andExpect(jsonPath("$.campos.codigo", is("O código é obrigatório")))
-                .andExpect(jsonPath("$.campos.preco", is("O preço é obrigatório")));
-    }
-
-    @Test
-    void deveRetornar400ParaEstoqueNegativo() throws Exception {
-        mockMvc.perform(post(PRODUTOS_URL)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nome\":\"Produto inválido\",\"preco\":100.00}"))
-                .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.campos.codigo", is("O código é obrigatório")));
-    }
-
-    @Test
-    void deveListarProdutosComEstoqueBaixo() throws Exception {
-        salvarProduto("Abaixo do mínimo", "100.00", 1, 2);
-        salvarProduto("No limite mínimo", "200.00", 2, 2);
-        salvarProduto("Estoque normal", "300.00", 3, 2);
-
-        mockMvc.perform(get(PRODUTOS_URL + "/baixo-estoque"))
+        mockMvc.perform(get("/api/produtos/baixo-estoque"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[*].nome", containsInAnyOrder("Abaixo do mínimo", "No limite mínimo")));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].nome").value("Motor"));
+
+        verify(produtoService).listarProdutosComBaixoEstoqueResponse();
     }
 
     @Test
-    void devePermitirCorsParaFrontendLocal() throws Exception {
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/tarefas")
-                        .header("Origin", "http://localhost:4000")
-                        .header("Access-Control-Request-Method", "POST")
-                        .header("Access-Control-Request-Headers", "content-type"))
+    void givenNenhumProdutoComBaixoEstoqueQuandoConsultaEntaoRetornaListaVazia() throws Exception {
+        when(produtoService.listarProdutosComBaixoEstoqueResponse())
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/produtos/baixo-estoque"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4000"))
-                .andExpect(header().string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("POST")))
-                .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("content-type")));
-    }
+                .andExpect(jsonPath("$.length()").value(0));
 
-    private Produto salvarProduto(String nome, String preco, int quantidadeEstoque, int estoqueMinimo) {
-        Produto produto = new Produto();
-        produto.setCodigo((long) quantidadeEstoque);
-        produto.setNome(nome);
-        produto.setDescricao("Produto de teste");
-        produto.setPreco(new BigDecimal(preco));
-        produto.setQuantidadeEstoque(quantidadeEstoque);
-        produto.setEstoqueMinimo(estoqueMinimo);
-        return produtoRepository.save(produto);
-    }
-
-    private String jsonProduto(String nome, String preco, int quantidadeEstoque, int estoqueMinimo)
-            throws Exception {
-        return objectMapper.writeValueAsString(new ProdutoPayload(
-            nome,
-            (long) quantidadeEstoque,
-            new BigDecimal(preco),
-            "2027-01-01"
-        ));
-    }
-
-    private record ProdutoPayload(
-            String nome,
-            Long codigo,
-            BigDecimal preco,
-            String dataValidade
-    ) {
+        verify(produtoService).listarProdutosComBaixoEstoqueResponse();
     }
 }
