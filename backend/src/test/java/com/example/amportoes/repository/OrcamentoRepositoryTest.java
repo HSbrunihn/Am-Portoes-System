@@ -4,7 +4,7 @@ import com.example.amportoes.entity.Orcamento;
 import com.example.amportoes.entity.StatusTarefa;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 import java.util.List;
 
@@ -20,8 +20,8 @@ class OrcamentoRepositoryTest {
     void givenOrcamentosComStatusDistintosQuandoBuscaPorStatusEntaoRetornaSomenteStatusSolicitado() {
         // Given
         orcamentoRepository.save(new Orcamento(null, "Reforma", "", null, null, StatusTarefa.PENDENTE));
-        orcamentoRepository.save(new Orcamento(null, "Instalação", "", null, null, StatusTarefa.PENDENTE));
-        orcamentoRepository.save(new Orcamento(null, "Manutenção", "", null, null, StatusTarefa.CONCLUIDA));
+        orcamentoRepository.save(new Orcamento(null, "InstalaÃ§Ã£o", "", null, null, StatusTarefa.PENDENTE));
+        orcamentoRepository.save(new Orcamento(null, "ManutenÃ§Ã£o", "", null, null, StatusTarefa.CONCLUIDA));
 
         // When
         List<Orcamento> resultado = orcamentoRepository.findByStatus(StatusTarefa.PENDENTE);
@@ -31,3 +31,5 @@ class OrcamentoRepositoryTest {
                 .allSatisfy(orcamento -> assertThat(orcamento.getStatus()).isEqualTo(StatusTarefa.PENDENTE));
     }
 }
+
+

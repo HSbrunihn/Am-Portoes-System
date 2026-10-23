@@ -1,5 +1,7 @@
 package com.example.amportoes.controller;
 
+import com.example.amportoes.repository.UsuarioRepository;
+
 import com.example.amportoes.dto.MovimentacaoResponseDTO;
 import com.example.amportoes.entity.TipoMovimentacao;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
@@ -23,6 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MovimentacaoControllerIntegrationTest {
     @Autowired MockMvc mockMvc;
     @MockitoBean MovimentacaoService movimentacaoService;
+
+    @MockitoBean UsuarioRepository usuarioRepository;
 
     @Test
     void givenMovimentacaoValidaQuandoRegistraEntaoRetorna201ComDadosDoService() throws Exception {
