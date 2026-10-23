@@ -21,3 +21,13 @@ dist/
 
 # Logs
 *.log
+
+# Arquivos gerados pelo Maven
+backend/target/
+
+# Arquivos de diagnóstico
+erro-flyway.txt
+erro-inicializacao.txt
+
+# Backups locais
+frontend/package-lock.backup.json
