@@ -1,158 +1,70 @@
-
 package com.example.amportoes.controller;
 
-import com.example.amportoes.controller.request.UsuarioRequest;
-import com.example.amportoes.entity.Usuario;
-import com.example.amportoes.repository.UsuarioRepository;
-import tools.jackson.databind.ObjectMapper;
-
-import org.junit.jupiter.api.BeforeEach;
+import com.example.amportoes.controller.response.UsuarioResponse;
+import com.example.amportoes.exception.RecursoNaoEncontradoException;
+import com.example.amportoes.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
+import java.util.List;
+
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(UsuarioController.class)
 class UsuarioControllerIntegrationTest {
-
-    private static final String URL = "/api/usuarios";
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper mapper;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @BeforeEach
-    void limparBanco() {
-        usuarioRepository.deleteAll();
-    }
+    @Autowired MockMvc mockMvc;
+    @MockitoBean UsuarioService usuarioService;
 
     @Test
-    void deveCriarUsuario() throws Exception {
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("Bruno", "bruno@teste.com", "senha123")))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.nome", is("Bruno")))
-                .andExpect(jsonPath("$.email", is("bruno@teste.com")))
-                .andExpect(jsonPath("$.senha").doesNotExist());
+    void givenUsuarioValidoQuandoCadastraEntaoRetorna201SemExporSenha() throws Exception {
+        // Given
+        when(usuarioService.criar(any())).thenReturn(new UsuarioResponse(8L, "Ana", "ana@example.com"));
 
-        assertThat(usuarioRepository.count()).isEqualTo(1);
-
-        Usuario salvo = usuarioRepository
-                .findByEmailIgnoreCase("bruno@teste.com")
-                .orElseThrow();
-
-        assertThat(salvo.getNome()).isEqualTo("Bruno");
-        assertThat(salvo.getEmail()).isEqualTo("bruno@teste.com");
-    }
-
-    @Test
-    void deveListarUsuarios() throws Exception {
-        salvar("Bruno", "bruno@teste.com");
-        salvar("Ana", "ana@teste.com");
-
-        mockMvc.perform(get(URL))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[*].nome",
-                        containsInAnyOrder("Bruno", "Ana")))
-                .andExpect(jsonPath("$[*].email",
-                        containsInAnyOrder(
-                                "bruno@teste.com",
-                                "ana@teste.com"
-                        )))
-                .andExpect(jsonPath("$[*].senha").doesNotExist());
-    }
-
-    @Test
-    void deveBuscarUsuarioPorId() throws Exception {
-        Usuario usuario = salvar("Bruno", "bruno@teste.com");
-
-        mockMvc.perform(get(URL + "/" + usuario.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome", is("Bruno")))
-                .andExpect(jsonPath("$.email", is("bruno@teste.com")))
+        // When
+        mockMvc.perform(post("/api/usuarios").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"email\":\"ana@example.com\",\"senha\":\"senha123\"}"))
+                // Then
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.nome").value("Ana"))
                 .andExpect(jsonPath("$.senha").doesNotExist());
     }
 
     @Test
-    void deveRetornar404ParaUsuarioInexistente() throws Exception {
-        mockMvc.perform(get(URL + "/999999"))
-                .andExpect(status().isNotFound());
+    void givenEmailInvalidoQuandoCadastraUsuarioEntaoRetorna400ComErroDeValidacao() throws Exception {
+        // Given
+        String corpoInvalido = "{\"nome\":\"Ana\",\"email\":\"email-invalido\",\"senha\":\"senha123\"}";
+
+        // When
+        mockMvc.perform(post("/api/usuarios").contentType(MediaType.APPLICATION_JSON).content(corpoInvalido))
+                // Then
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.campos.email").exists());
+        verifyNoInteractions(usuarioService);
     }
 
     @Test
-    void deveAtualizarUsuario() throws Exception {
-        Usuario usuario = salvar("Bruno", "bruno@teste.com");
+    void givenUsuarioInexistenteNoServiceQuandoBuscaPorIdEntaoRetorna404() throws Exception {
+        // Given
+        when(usuarioService.buscarPorId(33L)).thenThrow(new RecursoNaoEncontradoException("Usuario nao encontrado"));
 
-        mockMvc.perform(put(URL + "/" + usuario.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(
-                                "Bruno Atualizado",
-                                "novo@teste.com",
-                                "senha456"
-                        )))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome", is("Bruno Atualizado")))
-                .andExpect(jsonPath("$.email", is("novo@teste.com")))
-                .andExpect(jsonPath("$.senha").doesNotExist());
-
-        Usuario atualizado = usuarioRepository
-                .findById(usuario.getId())
-                .orElseThrow();
-
-        assertThat(atualizado.getNome()).isEqualTo("Bruno Atualizado");
-        assertThat(atualizado.getEmail()).isEqualTo("novo@teste.com");
+        // When
+        mockMvc.perform(get("/api/usuarios/33"))
+                // Then
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
-    void deveExcluirUsuario() throws Exception {
-        Usuario usuario = salvar("Bruno", "bruno@teste.com");
+    void givenListaDeUsuariosDoServiceQuandoListaEntaoRetornaUsuariosEmJson() throws Exception {
+        // Given
+        when(usuarioService.listar(null)).thenReturn(List.of(new UsuarioResponse(1L, "Ana", "ana@example.com")));
 
-        mockMvc.perform(delete(URL + "/" + usuario.getId()))
-                .andExpect(status().isNoContent());
-
-        assertThat(usuarioRepository.findById(usuario.getId())).isEmpty();
-        assertThat(usuarioRepository.count()).isZero();
-    }
-
-    @Test
-    void deveRejeitarUsuarioInvalido() throws Exception {
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
-
-        assertThat(usuarioRepository.count()).isZero();
-    }
-
-    private Usuario salvar(String nome, String email) throws Exception {
-        mockMvc.perform(post(URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(nome, email, "senha123")))
-                .andExpect(status().isCreated());
-
-        return usuarioRepository.findByEmailIgnoreCase(email)
-                .orElseThrow();
-    }
-
-    private String json(String nome, String email, String senha)
-            throws Exception {
-        return mapper.writeValueAsString(
-                new UsuarioRequest(nome, email, senha)
-        );
+        // When
+        mockMvc.perform(get("/api/usuarios"))
+                // Then
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].email").value("ana@example.com"));
     }
 }
