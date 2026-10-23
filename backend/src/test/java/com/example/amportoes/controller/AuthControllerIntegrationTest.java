@@ -1,3 +1,4 @@
+
 package com.example.amportoes.controller;
 
 import com.example.amportoes.controller.request.LoginRequest;
@@ -14,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -45,12 +47,15 @@ class AuthControllerIntegrationTest {
     void deveRealizarLoginComCredenciaisValidas() throws Exception {
         criarUsuario();
 
-        mockMvc.perform(post(URL + "/login")
+        var resultado = mockMvc.perform(post(URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("bruno@teste.com", "senha123")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email", is("bruno@teste.com")))
-                .andExpect(jsonPath("$.senha").doesNotExist());
+                .andExpect(jsonPath("$.senha").doesNotExist())
+                .andReturn();
+
+        assertThat(resultado.getRequest().getSession(false)).isNotNull();
     }
 
     @Test
@@ -61,6 +66,8 @@ class AuthControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("bruno@teste.com", "senhaerrada")))
                 .andExpect(status().isUnauthorized());
+
+        assertThat(usuarioRepository.count()).isEqualTo(1);
     }
 
     @Test
@@ -69,6 +76,8 @@ class AuthControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("inexistente@teste.com", "senha123")))
                 .andExpect(status().isUnauthorized());
+
+        assertThat(usuarioRepository.count()).isZero();
     }
 
     @Test
@@ -90,9 +99,13 @@ class AuthControllerIntegrationTest {
                 .getRequest()
                 .getSession(false);
 
+        assertThat(session).isNotNull();
+
         mockMvc.perform(get(URL + "/me").session(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email", is("bruno@teste.com")));
+                .andExpect(jsonPath("$.email", is("bruno@teste.com")))
+                .andExpect(jsonPath("$.nome", is("Bruno")))
+                .andExpect(jsonPath("$.senha").doesNotExist());
     }
 
     @Test
@@ -107,6 +120,8 @@ class AuthControllerIntegrationTest {
                 .andReturn()
                 .getRequest()
                 .getSession(false);
+
+        assertThat(session).isNotNull();
 
         mockMvc.perform(post(URL + "/logout").session(session))
                 .andExpect(status().isNoContent());

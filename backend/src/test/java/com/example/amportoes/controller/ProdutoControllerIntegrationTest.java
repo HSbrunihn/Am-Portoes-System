@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -54,8 +55,13 @@ class ProdutoControllerIntegrationTest {
                 .andExpect(jsonPath("$.codigo", is(5)))
                 .andExpect(jsonPath("$.preco", is(1200.0)));
 
-        org.assertj.core.api.Assertions.assertThat(produtoRepository.count())
-                .isEqualTo(1);
+        assertThat(produtoRepository.count()).isEqualTo(1);
+
+        Produto salvo = produtoRepository.findAll().get(0);
+
+        assertThat(salvo.getNome()).isEqualTo("Portao");
+        assertThat(salvo.getCodigo()).isEqualTo(5L);
+        assertThat(salvo.getPreco()).isEqualByComparingTo("1200.00");
     }
 
     @Test
@@ -77,7 +83,8 @@ class ProdutoControllerIntegrationTest {
         mockMvc.perform(get(URL + "/" + produto.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome", is("Portao")))
-                .andExpect(jsonPath("$.codigo", is(1)));
+                .andExpect(jsonPath("$.codigo", is(1)))
+                .andExpect(jsonPath("$.preco", is(1200.0)));
     }
 
     @Test
@@ -91,6 +98,13 @@ class ProdutoControllerIntegrationTest {
                 .andExpect(jsonPath("$.nome", is("Portao novo")))
                 .andExpect(jsonPath("$.codigo", is(2)))
                 .andExpect(jsonPath("$.preco", is(1500.0)));
+
+        Produto atualizado = produtoRepository.findById(produto.getId())
+                .orElseThrow();
+
+        assertThat(atualizado.getNome()).isEqualTo("Portao novo");
+        assertThat(atualizado.getCodigo()).isEqualTo(2L);
+        assertThat(atualizado.getPreco()).isEqualByComparingTo("1500.00");
     }
 
     @Test
@@ -100,9 +114,7 @@ class ProdutoControllerIntegrationTest {
         mockMvc.perform(delete(URL + "/" + produto.getId()))
                 .andExpect(status().isNoContent());
 
-        org.assertj.core.api.Assertions.assertThat(
-                produtoRepository.findById(produto.getId())
-        ).isEmpty();
+        assertThat(produtoRepository.findById(produto.getId())).isEmpty();
     }
 
     @Test
@@ -127,6 +139,8 @@ class ProdutoControllerIntegrationTest {
                 .andExpect(jsonPath("$.campos.nome").exists())
                 .andExpect(jsonPath("$.campos.codigo").exists())
                 .andExpect(jsonPath("$.campos.preco").exists());
+
+        assertThat(produtoRepository.count()).isZero();
     }
 
     @Test
@@ -141,15 +155,26 @@ class ProdutoControllerIntegrationTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos.codigo").exists());
+
+        assertThat(produtoRepository.count()).isZero();
     }
 
     @Test
     void deveListarProdutosComEstoqueBaixo() throws Exception {
-        salvar("Estoque baixo", 1, "100.00");
-        salvar("Estoque normal", 2, "200.00");
+        Produto baixo = salvar("Estoque baixo", 1, "100.00");
+        baixo.setQuantidadeEstoque(1);
+        baixo.setEstoqueMinimo(2);
+        produtoRepository.save(baixo);
+
+        Produto normal = salvar("Estoque normal", 2, "200.00");
+        normal.setQuantidadeEstoque(10);
+        normal.setEstoqueMinimo(2);
+        produtoRepository.save(normal);
 
         mockMvc.perform(get(URL + "/baixo-estoque"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nome", is("Estoque baixo")));
     }
 
     @Test

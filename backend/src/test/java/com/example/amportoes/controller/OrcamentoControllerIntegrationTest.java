@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -49,7 +50,16 @@ class OrcamentoControllerIntegrationTest {
                         .content(json("Instalação", "1500.00")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.titulo", is("Instalação")))
-                .andExpect(jsonPath("$.status", is("PENDENTE")));
+                .andExpect(jsonPath("$.status", is("PENDENTE")))
+                .andExpect(jsonPath("$.valor", is(1500.0)));
+
+        assertThat(orcamentoRepository.count()).isEqualTo(1);
+
+        Orcamento salvo = orcamentoRepository.findAll().get(0);
+
+        assertThat(salvo.getTitulo()).isEqualTo("Instalação");
+        assertThat(salvo.getValor()).isEqualByComparingTo("1500.00");
+        assertThat(salvo.getStatus()).isEqualTo(StatusTarefa.PENDENTE);
     }
 
     @Test
@@ -59,7 +69,9 @@ class OrcamentoControllerIntegrationTest {
 
         mockMvc.perform(get(URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[*].titulo",
+                        containsInAnyOrder("Instalação", "Manutenção")));
     }
 
     @Test
@@ -69,7 +81,8 @@ class OrcamentoControllerIntegrationTest {
         mockMvc.perform(get(URL).param("status", "PENDENTE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].status", is("PENDENTE")));
+                .andExpect(jsonPath("$[0].status", is("PENDENTE")))
+                .andExpect(jsonPath("$[0].titulo", is("Instalação")));
     }
 
     @Test
@@ -78,13 +91,17 @@ class OrcamentoControllerIntegrationTest {
 
         mockMvc.perform(get(URL + "/" + orcamento.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.titulo", is("Instalação")));
+                .andExpect(jsonPath("$.titulo", is("Instalação")))
+                .andExpect(jsonPath("$.valor", is(1500.0)))
+                .andExpect(jsonPath("$.status", is("PENDENTE")));
     }
 
     @Test
     void deveRetornar404ParaOrcamentoInexistente() throws Exception {
         mockMvc.perform(get(URL + "/999999"))
                 .andExpect(status().isNotFound());
+
+        assertThat(orcamentoRepository.count()).isZero();
     }
 
     @Test
@@ -97,6 +114,13 @@ class OrcamentoControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.titulo", is("Título atualizado")))
                 .andExpect(jsonPath("$.valor", is(2000.0)));
+
+        Orcamento atualizado = orcamentoRepository
+                .findById(orcamento.getId())
+                .orElseThrow();
+
+        assertThat(atualizado.getTitulo()).isEqualTo("Título atualizado");
+        assertThat(atualizado.getValor()).isEqualByComparingTo("2000.00");
     }
 
     @Test
@@ -106,8 +130,11 @@ class OrcamentoControllerIntegrationTest {
         mockMvc.perform(delete(URL + "/" + orcamento.getId()))
                 .andExpect(status().isNoContent());
 
-        org.assertj.core.api.Assertions.assertThat(
-                orcamentoRepository.findById(orcamento.getId())).isEmpty();
+        assertThat(
+                orcamentoRepository.findById(orcamento.getId())
+        ).isEmpty();
+
+        assertThat(orcamentoRepository.count()).isZero();
     }
 
     @Test
@@ -116,6 +143,8 @@ class OrcamentoControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
+
+        assertThat(orcamentoRepository.count()).isZero();
     }
 
     private Orcamento salvar(String titulo) {
