@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -63,10 +64,10 @@ class MovimentacaoControllerIntegrationTest {
                 .andExpect(jsonPath("$.tipo", is("ENTRADA")));
 
         Produto atualizado = produtoRepository
-                .findById(produto.getId()).orElseThrow();
+                .findById(produto.getId())
+                .orElseThrow();
 
-        org.assertj.core.api.Assertions.assertThat(
-                atualizado.getQuantidadeEstoque()).isEqualTo(8);
+        assertThat(atualizado.getQuantidadeEstoque()).isEqualTo(8);
     }
 
     @Test
@@ -87,10 +88,10 @@ class MovimentacaoControllerIntegrationTest {
                 .andExpect(jsonPath("$.tipo", is("SAIDA")));
 
         Produto atualizado = produtoRepository
-                .findById(produto.getId()).orElseThrow();
+                .findById(produto.getId())
+                .orElseThrow();
 
-        org.assertj.core.api.Assertions.assertThat(
-                atualizado.getQuantidadeEstoque()).isEqualTo(3);
+        assertThat(atualizado.getQuantidadeEstoque()).isEqualTo(3);
     }
 
     @Test
@@ -108,13 +109,13 @@ class MovimentacaoControllerIntegrationTest {
                                 """.formatted(produto.getId())))
                 .andExpect(status().isBadRequest());
 
-        org.assertj.core.api.Assertions.assertThat(
-                movimentacaoRepository.count()).isZero();
+        assertThat(movimentacaoRepository.count()).isZero();
 
-        org.assertj.core.api.Assertions.assertThat(
-                        produtoRepository.findById(produto.getId())
-                                .orElseThrow().getQuantidadeEstoque())
-                .isEqualTo(2);
+        Produto inalterado = produtoRepository
+                .findById(produto.getId())
+                .orElseThrow();
+
+        assertThat(inalterado.getQuantidadeEstoque()).isEqualTo(2);
     }
 
     @Test
@@ -129,6 +130,8 @@ class MovimentacaoControllerIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isNotFound());
+
+        assertThat(movimentacaoRepository.count()).isZero();
     }
 
     @Test
@@ -140,7 +143,8 @@ class MovimentacaoControllerIntegrationTest {
         mockMvc.perform(get(URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].tipo", is("ENTRADA")));
+                .andExpect(jsonPath("$[0].tipo", is("ENTRADA")))
+                .andExpect(jsonPath("$[0].quantidade", is(2)));
     }
 
     @Test
@@ -153,13 +157,16 @@ class MovimentacaoControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].produtoId",
-                        is(produto.getId().intValue())));
+                        is(produto.getId().intValue())))
+                .andExpect(jsonPath("$[0].quantidade", is(2)));
     }
 
     @Test
     void deveRetornar404AoListarProdutoInexistente() throws Exception {
         mockMvc.perform(get(URL + "/produto/999999"))
                 .andExpect(status().isNotFound());
+
+        assertThat(movimentacaoRepository.count()).isZero();
     }
 
     @Test
@@ -176,6 +183,14 @@ class MovimentacaoControllerIntegrationTest {
                                 }
                                 """.formatted(produto.getId())))
                 .andExpect(status().isBadRequest());
+
+        assertThat(movimentacaoRepository.count()).isZero();
+
+        Produto inalterado = produtoRepository
+                .findById(produto.getId())
+                .orElseThrow();
+
+        assertThat(inalterado.getQuantidadeEstoque()).isEqualTo(5);
     }
 
     private Produto salvarProduto(int estoque) {

@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -49,7 +50,16 @@ class TarefaControllerIntegrationTest {
                         .content(json("Instalar portão", "500.00")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.titulo", is("Instalar portão")))
+                .andExpect(jsonPath("$.valor", is(500.0)))
                 .andExpect(jsonPath("$.status", is("PENDENTE")));
+
+        assertThat(tarefaRepository.count()).isEqualTo(1);
+
+        Tarefa salva = tarefaRepository.findAll().get(0);
+
+        assertThat(salva.getTitulo()).isEqualTo("Instalar portão");
+        assertThat(salva.getValor()).isEqualByComparingTo("500.00");
+        assertThat(salva.getStatus()).isEqualTo(StatusTarefa.PENDENTE);
     }
 
     @Test
@@ -59,7 +69,12 @@ class TarefaControllerIntegrationTest {
 
         mockMvc.perform(get(URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[*].titulo",
+                        containsInAnyOrder(
+                                "Instalar portão",
+                                "Realizar manutenção"
+                        )));
     }
 
     @Test
@@ -69,6 +84,7 @@ class TarefaControllerIntegrationTest {
         mockMvc.perform(get(URL).param("status", "PENDENTE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].titulo", is("Instalar portão")))
                 .andExpect(jsonPath("$[0].status", is("PENDENTE")));
     }
 
@@ -78,13 +94,17 @@ class TarefaControllerIntegrationTest {
 
         mockMvc.perform(get(URL + "/" + tarefa.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.titulo", is("Instalar portão")));
+                .andExpect(jsonPath("$.titulo", is("Instalar portão")))
+                .andExpect(jsonPath("$.valor", is(500.0)))
+                .andExpect(jsonPath("$.status", is("PENDENTE")));
     }
 
     @Test
     void deveRetornar404ParaTarefaInexistente() throws Exception {
         mockMvc.perform(get(URL + "/999999"))
                 .andExpect(status().isNotFound());
+
+        assertThat(tarefaRepository.count()).isZero();
     }
 
     @Test
@@ -95,7 +115,15 @@ class TarefaControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("Título atualizado", "800.00")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.titulo", is("Título atualizado")));
+                .andExpect(jsonPath("$.titulo", is("Título atualizado")))
+                .andExpect(jsonPath("$.valor", is(800.0)));
+
+        Tarefa atualizada = tarefaRepository
+                .findById(tarefa.getId())
+                .orElseThrow();
+
+        assertThat(atualizada.getTitulo()).isEqualTo("Título atualizado");
+        assertThat(atualizada.getValor()).isEqualByComparingTo("800.00");
     }
 
     @Test
@@ -107,6 +135,12 @@ class TarefaControllerIntegrationTest {
                         .content("\"CONCLUIDA\""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("CONCLUIDA")));
+
+        Tarefa atualizada = tarefaRepository
+                .findById(tarefa.getId())
+                .orElseThrow();
+
+        assertThat(atualizada.getStatus()).isEqualTo(StatusTarefa.CONCLUIDA);
     }
 
     @Test
@@ -116,8 +150,8 @@ class TarefaControllerIntegrationTest {
         mockMvc.perform(delete(URL + "/" + tarefa.getId()))
                 .andExpect(status().isNoContent());
 
-        org.assertj.core.api.Assertions.assertThat(
-                tarefaRepository.findById(tarefa.getId())).isEmpty();
+        assertThat(tarefaRepository.findById(tarefa.getId())).isEmpty();
+        assertThat(tarefaRepository.count()).isZero();
     }
 
     @Test
@@ -126,6 +160,8 @@ class TarefaControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
+
+        assertThat(tarefaRepository.count()).isZero();
     }
 
     private Tarefa salvar(String titulo) {
@@ -135,6 +171,7 @@ class TarefaControllerIntegrationTest {
         tarefa.setValor(new BigDecimal("500.00"));
         tarefa.setDataVencimento(LocalDate.of(2027, 1, 1));
         tarefa.setStatus(StatusTarefa.PENDENTE);
+
         return tarefaRepository.save(tarefa);
     }
 

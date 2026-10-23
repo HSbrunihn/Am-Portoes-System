@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,6 +48,15 @@ class UsuarioControllerIntegrationTest {
                 .andExpect(jsonPath("$.nome", is("Bruno")))
                 .andExpect(jsonPath("$.email", is("bruno@teste.com")))
                 .andExpect(jsonPath("$.senha").doesNotExist());
+
+        assertThat(usuarioRepository.count()).isEqualTo(1);
+
+        Usuario salvo = usuarioRepository
+                .findByEmailIgnoreCase("bruno@teste.com")
+                .orElseThrow();
+
+        assertThat(salvo.getNome()).isEqualTo("Bruno");
+        assertThat(salvo.getEmail()).isEqualTo("bruno@teste.com");
     }
 
     @Test
@@ -56,7 +66,15 @@ class UsuarioControllerIntegrationTest {
 
         mockMvc.perform(get(URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[*].nome",
+                        containsInAnyOrder("Bruno", "Ana")))
+                .andExpect(jsonPath("$[*].email",
+                        containsInAnyOrder(
+                                "bruno@teste.com",
+                                "ana@teste.com"
+                        )))
+                .andExpect(jsonPath("$[*].senha").doesNotExist());
     }
 
     @Test
@@ -66,6 +84,7 @@ class UsuarioControllerIntegrationTest {
         mockMvc.perform(get(URL + "/" + usuario.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome", is("Bruno")))
+                .andExpect(jsonPath("$.email", is("bruno@teste.com")))
                 .andExpect(jsonPath("$.senha").doesNotExist());
     }
 
@@ -81,11 +100,22 @@ class UsuarioControllerIntegrationTest {
 
         mockMvc.perform(put(URL + "/" + usuario.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("Bruno Atualizado",
-                                "novo@teste.com", "senha456")))
+                        .content(json(
+                                "Bruno Atualizado",
+                                "novo@teste.com",
+                                "senha456"
+                        )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome", is("Bruno Atualizado")))
-                .andExpect(jsonPath("$.email", is("novo@teste.com")));
+                .andExpect(jsonPath("$.email", is("novo@teste.com")))
+                .andExpect(jsonPath("$.senha").doesNotExist());
+
+        Usuario atualizado = usuarioRepository
+                .findById(usuario.getId())
+                .orElseThrow();
+
+        assertThat(atualizado.getNome()).isEqualTo("Bruno Atualizado");
+        assertThat(atualizado.getEmail()).isEqualTo("novo@teste.com");
     }
 
     @Test
@@ -95,8 +125,8 @@ class UsuarioControllerIntegrationTest {
         mockMvc.perform(delete(URL + "/" + usuario.getId()))
                 .andExpect(status().isNoContent());
 
-        org.assertj.core.api.Assertions.assertThat(
-                usuarioRepository.findById(usuario.getId())).isEmpty();
+        assertThat(usuarioRepository.findById(usuario.getId())).isEmpty();
+        assertThat(usuarioRepository.count()).isZero();
     }
 
     @Test
@@ -105,6 +135,8 @@ class UsuarioControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
+
+        assertThat(usuarioRepository.count()).isZero();
     }
 
     private Usuario salvar(String nome, String email) throws Exception {
@@ -113,7 +145,8 @@ class UsuarioControllerIntegrationTest {
                         .content(json(nome, email, "senha123")))
                 .andExpect(status().isCreated());
 
-        return usuarioRepository.findByEmailIgnoreCase(email).orElseThrow();
+        return usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow();
     }
 
     private String json(String nome, String email, String senha)
