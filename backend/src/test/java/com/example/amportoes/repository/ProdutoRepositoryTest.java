@@ -1,9 +1,10 @@
+
 package com.example.amportoes.repository;
 
 import com.example.amportoes.entity.Produto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,10 +25,12 @@ class ProdutoRepositoryTest {
         produtoRepository.save(produto("Motor", 8, 2));
 
         // When
-        List<Produto> resultado = produtoRepository.findByNomeContainingIgnoreCase("portão");
+        List<Produto> resultado =
+                produtoRepository.findByNomeContainingIgnoreCase("portão");
 
         // Then
-        assertThat(resultado).extracting(Produto::getNome)
+        assertThat(resultado)
+                .extracting(Produto::getNome)
                 .containsExactlyInAnyOrder("Portão basculante", "PORTÃO social");
     }
 
@@ -39,14 +42,19 @@ class ProdutoRepositoryTest {
         produtoRepository.save(produto("Acima", 3, 2));
 
         // When
-        List<Produto> resultado = produtoRepository.findProdutosComBaixoEstoque();
+        List<Produto> resultado =
+                produtoRepository.findProdutosComBaixoEstoque();
 
         // Then
-        assertThat(resultado).extracting(Produto::getNome)
+        assertThat(resultado)
+                .extracting(Produto::getNome)
                 .containsExactlyInAnyOrder("Abaixo", "No limite");
     }
 
     private Produto produto(String nome, int quantidade, int minimo) {
-        return new Produto(null, null, nome, "", BigDecimal.ONE, quantidade, minimo, null);
+        return new Produto(
+                null, null, nome, "", BigDecimal.ONE,
+                quantidade, minimo, null
+        );
     }
 }

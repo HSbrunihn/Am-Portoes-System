@@ -1,5 +1,7 @@
 package com.example.amportoes.controller;
 
+import com.example.amportoes.repository.UsuarioRepository;
+
 import com.example.amportoes.controller.response.UsuarioResponse;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.service.UsuarioService;
@@ -20,6 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UsuarioControllerIntegrationTest {
     @Autowired MockMvc mockMvc;
     @MockitoBean UsuarioService usuarioService;
+
+    @MockitoBean UsuarioRepository usuarioRepository;
 
     @Test
     void givenUsuarioValidoQuandoCadastraEntaoRetorna201SemExporSenha() throws Exception {

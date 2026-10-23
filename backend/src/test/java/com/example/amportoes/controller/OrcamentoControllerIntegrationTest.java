@@ -1,5 +1,7 @@
 package com.example.amportoes.controller;
 
+import com.example.amportoes.repository.UsuarioRepository;
+
 import com.example.amportoes.controller.response.OrcamentoResponse;
 import com.example.amportoes.entity.StatusTarefa;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
@@ -22,6 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrcamentoControllerIntegrationTest {
     @Autowired MockMvc mockMvc;
     @MockitoBean OrcamentoService orcamentoService;
+
+    @MockitoBean UsuarioRepository usuarioRepository;
 
     @Test
     void givenOrcamentoValidoQuandoCriaEntaoRetorna201ComRespostaDoService() throws Exception {
