@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { catchError, switchMap, tap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { StatusTarefa, Tarefa, TarefaRequest } from '../models/api.model';
 import { Task } from '../models/task.model';
@@ -114,9 +114,7 @@ export class TaskService {
     if (backendStatus === tarefa.status) {
       return of(tarefa);
     }
-    return this.api.updateTaskStatus(tarefa.id, backendStatus).pipe(
-      catchError(() => of(tarefa)),
-    );
+    return this.api.updateTaskStatus(tarefa.id, backendStatus);
   }
 
   private toBackendStatus(status: Task['status']): StatusTarefa {
