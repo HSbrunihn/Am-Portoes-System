@@ -5,6 +5,11 @@ import com.example.amportoes.controller.request.UsuarioRequest;
 import com.example.amportoes.controller.response.UsuarioResponse;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.repository.UsuarioRepository;
+import com.example.amportoes.security.ErroSegurancaHandler;
+import com.example.amportoes.security.JwtService;
+import com.example.amportoes.security.SecurityConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import com.example.amportoes.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +27,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UsuarioController.class)
+@Import({SecurityConfig.class, ErroSegurancaHandler.class})
+@WithMockUser
 class UsuarioControllerIntegrationTest {
 
     @Autowired
@@ -32,6 +39,9 @@ class UsuarioControllerIntegrationTest {
 
     @MockitoBean
     UsuarioRepository usuarioRepository;
+
+    @MockitoBean
+    JwtService jwtService;
 
     @Test
     void givenUsuarioValidoQuandoCadastraEntaoRetorna201SemExporSenha() throws Exception {

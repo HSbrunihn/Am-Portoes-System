@@ -5,6 +5,11 @@ import com.example.amportoes.controller.request.ProdutoRequest;
 import com.example.amportoes.controller.response.ProdutoResponse;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.repository.UsuarioRepository;
+import com.example.amportoes.security.ErroSegurancaHandler;
+import com.example.amportoes.security.JwtService;
+import com.example.amportoes.security.SecurityConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import com.example.amportoes.service.ProdutoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +26,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProdutoController.class)
+@Import({SecurityConfig.class, ErroSegurancaHandler.class})
+@WithMockUser
 class ProdutoControllerIntegrationTest {
 
     @Autowired
@@ -31,6 +38,9 @@ class ProdutoControllerIntegrationTest {
 
     @MockitoBean
     UsuarioRepository usuarioRepository;
+
+    @MockitoBean
+    JwtService jwtService;
 
     private ProdutoResponse resposta(Long id, String nome) {
         return new ProdutoResponse(
