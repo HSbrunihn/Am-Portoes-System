@@ -9,6 +9,10 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   readonly user = signal<Usuario | null>(null);
 
+  clearSession(): void {
+    this.user.set(null);
+  }
+
   login(email: string, senha: string): Observable<Usuario> {
     if (environment.mockAuth) {
       const usuarioFake: Usuario = { id: 1, nome: 'Usuário Demo', email };
