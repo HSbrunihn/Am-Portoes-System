@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { catchError, Observable, of, tap } from 'rxjs';
+import { catchError, Observable, of, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Usuario } from '../models/api.model';
 
@@ -30,7 +30,13 @@ export class AuthService {
       .get<Usuario>(`${environment.apiUrl}/auth/me`)
       .pipe(
         tap(u => this.user.set(u)),
-        catchError(() => of(null))
+        catchError((error: HttpErrorResponse) => {
+          if (error.status === 401) {
+            this.user.set(null);
+            return of(null);
+          }
+          return throwError(() => error);
+        })
       );
   }
 
