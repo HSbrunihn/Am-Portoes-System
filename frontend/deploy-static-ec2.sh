@@ -17,7 +17,7 @@ cp -a "$BUILD_DIR/." "$PACKAGE_DIR/site/"
 
 cat > "$PACKAGE_DIR/nginx/site.conf.template" <<'NGINX'
 server {
-    listen 80;
+    listen __LISTEN_PORT__;
     server_name __SERVER_NAME__;
     root __WEB_ROOT__;
     index index.html;
@@ -31,4 +31,4 @@ NGINX
 printf 'Pacote estático preparado em: %s\n' "$PACKAGE_DIR"
 printf 'Arquivos Angular: %s/site\n' "$PACKAGE_DIR"
 printf 'Template Nginx: %s/nginx/site.conf.template\n' "$PACKAGE_DIR"
-printf 'Antes do uso, substitua __SERVER_NAME__ e __WEB_ROOT__ pelos valores definidos para o ambiente.\n'
+printf 'Antes do uso, substitua __LISTEN_PORT__, __SERVER_NAME__ e __WEB_ROOT__ pelos valores definidos para o ambiente.\n'
