@@ -91,6 +91,7 @@ export class EntityPage implements OnInit, OnDestroy {
   readonly loadFailed = signal(false);
   readonly saving = signal(false);
   readonly error = signal('');
+  readonly formError = signal('');
   readonly feedback = signal('');
   readonly search = signal('');
   readonly modal = signal(false);
@@ -178,12 +179,15 @@ export class EntityPage implements OnInit, OnDestroy {
   }
 
   newItem(): void {
+    if (this.saving()) return;
     this.editingId = null;
     this.form.reset();
+    this.formError.set('');
     this.modal.set(true);
   }
 
   edit(item: ApiEntity): void {
+    if (this.saving()) return;
     this.editingId = item.id;
     const values: Record<string, string | number | null> = {};
     for (const f of this.fields) {
@@ -191,6 +195,7 @@ export class EntityPage implements OnInit, OnDestroy {
       if (f.key === 'senha') values[f.key] = '';
     }
     this.form.reset(values);
+    this.formError.set('');
     this.modal.set(true);
   }
 
@@ -211,12 +216,16 @@ export class EntityPage implements OnInit, OnDestroy {
   }
 
   save(): void {
+    if (this.saving()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     this.saving.set(true);
     this.error.set('');
+    this.formError.set('');
+    this.feedback.set('');
+    const creating = this.editingId === null;
     const v = this.form.getRawValue() as Record<string, string | number | null>;
 
     let payload: TarefaRequest | OrcamentoRequest | ProdutoRequest | UsuarioRequest;
@@ -267,7 +276,7 @@ export class EntityPage implements OnInit, OnDestroy {
         this.saving.set(false);
         this.modal.set(false);
         this.feedback.set(
-          this.editingId === null
+          creating
             ? 'Registro criado com sucesso.'
             : 'Registro atualizado com sucesso.',
         );
@@ -275,9 +284,15 @@ export class EntityPage implements OnInit, OnDestroy {
       },
       error: (e: HttpErrorResponse) => {
         this.saving.set(false);
-        this.error.set(this.errorMessage(e));
+        this.formError.set(this.errorMessage(e));
       },
     });
+  }
+
+  closeForm(): void {
+    if (this.saving()) return;
+    this.modal.set(false);
+    this.formError.set('');
   }
 
   remove(item: ApiEntity): void {
