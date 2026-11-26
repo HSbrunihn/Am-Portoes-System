@@ -88,12 +88,14 @@ export class EntityPage implements OnInit, OnDestroy {
 
   readonly items = signal<ApiEntity[]>([]);
   readonly loading = signal(true);
+  readonly loadFailed = signal(false);
   readonly saving = signal(false);
   readonly error = signal('');
   readonly feedback = signal('');
   readonly search = signal('');
   readonly modal = signal(false);
   readonly detail = signal<ApiEntity | null>(null);
+  readonly detailLoading = signal(false);
   /** Filtro de status (só tarefas/orçamentos) */
   readonly statusFilter = signal<StatusTarefa | ''>('');
 
@@ -138,6 +140,7 @@ export class EntityPage implements OnInit, OnDestroy {
 
   load(): void {
     this.loading.set(true);
+    this.loadFailed.set(false);
     this.error.set('');
     this.api.list(this.resource).subscribe({
       next: (v) => {
@@ -146,6 +149,7 @@ export class EntityPage implements OnInit, OnDestroy {
       },
       error: () => {
         this.error.set('Não foi possível carregar os dados. Verifique a conexão com a API.');
+        this.loadFailed.set(true);
         this.loading.set(false);
       },
     });
@@ -191,9 +195,18 @@ export class EntityPage implements OnInit, OnDestroy {
   }
 
   view(id: number): void {
+    this.detail.set(null);
+    this.detailLoading.set(true);
+    this.error.set('');
     this.api.get(this.resource, id).subscribe({
-      next: (v) => this.detail.set(v),
-      error: () => this.error.set('Não foi possível consultar o registro.'),
+      next: (v) => {
+        this.detail.set(v);
+        this.detailLoading.set(false);
+      },
+      error: () => {
+        this.detailLoading.set(false);
+        this.error.set('Não foi possível consultar o registro.');
+      },
     });
   }
 
@@ -300,6 +313,10 @@ export class EntityPage implements OnInit, OnDestroy {
     if (v === null || v === '') return '—';
     if (key === 'preco' || key === 'valor') {
       return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+    if (key.toLowerCase().startsWith('data') && typeof v === 'string') {
+      const date = new Date(`${v}T12:00:00`);
+      return Number.isNaN(date.getTime()) ? v : date.toLocaleDateString('pt-BR');
     }
     return String(v);
   }
