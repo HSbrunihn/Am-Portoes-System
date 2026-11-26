@@ -125,7 +125,7 @@
 
 <!-- Modal de criação / edição -->
 @if (modal()) {
-  <div class="overlay" (click)="modal.set(false)">
+  <div class="overlay" (click)="closeForm()">
     <div class="entity-dialog" (click)="$event.stopPropagation()">
       <header>
         <div>
@@ -134,7 +134,7 @@
             {{ editingId === null ? 'Cadastrar' : 'Editar' }} {{ title.toLowerCase() }}
           </h2>
         </div>
-        <button type="button" (click)="modal.set(false)">×</button>
+        <button type="button" [disabled]="saving()" (click)="closeForm()">×</button>
       </header>
 
       <form [formGroup]="form" (ngSubmit)="save()">
@@ -159,8 +159,12 @@
           </label>
         }
 
+        @if (formError()) {
+          <div class="alert" role="alert">{{ formError() }}</div>
+        }
+
         <footer>
-          <button type="button" (click)="modal.set(false)">Cancelar</button>
+          <button type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
           <button class="primary" type="submit" [disabled]="saving()">
             {{ saving() ? 'Salvando…' : 'Salvar' }}
           </button>
