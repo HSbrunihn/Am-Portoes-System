@@ -1,4 +1,5 @@
-import { Component, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../services/task';
@@ -18,6 +19,7 @@ export class TaskForm implements OnChanges {
   @Output() concluido = new EventEmitter<void>();
 
   protected saving = false;
+  protected readonly error = signal('');
 
   protected novaTask: Partial<Task> = {
     nome: '',
@@ -38,6 +40,7 @@ export class TaskForm implements OnChanges {
     if (this.saving) return;
 
     this.saving = true;
+    this.error.set('');
 
     if (this.taskParaEditar && this.taskParaEditar.id) {
       this.taskService.updateTask(this.taskParaEditar.id, this.novaTask).subscribe({
@@ -45,8 +48,8 @@ export class TaskForm implements OnChanges {
           this.saving = false;
           this.concluido.emit();
         },
-        error: () => {
-          this.saving = false;
+        error: (error: HttpErrorResponse) => {
+          this.handleSaveError(error);
         },
       });
     } else {
@@ -55,10 +58,18 @@ export class TaskForm implements OnChanges {
           this.saving = false;
           this.concluido.emit();
         },
-        error: () => {
-          this.saving = false;
+        error: (error: HttpErrorResponse) => {
+          this.handleSaveError(error);
         },
       });
     }
+  }
+
+  private handleSaveError(error: HttpErrorResponse): void {
+    this.saving = false;
+    const body = error.error as { mensagem?: string; message?: string } | null;
+    this.error.set(
+      body?.mensagem ?? body?.message ?? 'Não foi possível salvar a tarefa. Tente novamente.',
+    );
   }
 }
