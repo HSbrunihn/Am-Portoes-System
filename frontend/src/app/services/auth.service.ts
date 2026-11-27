@@ -41,22 +41,32 @@ export class AuthService {
   }
 
   login(email: string, senha: string): Observable<Usuario> {
-    return this.http
-      .post<LoginResponse>(
+    return this.iniciarSessao(
+      this.http.post<LoginResponse>(
         `${environment.apiUrl}/auth/login`,
         { email, senha }
       )
-      .pipe(
-        tap(response => {
-          sessionStorage.setItem(
-            this.TOKEN_KEY,
-            response.token
-          );
+    );
+  }
 
-          this.user.set(response.usuario);
-        }),
-        map(response => response.usuario)
-      );
+  // Cadastro público: o back-end cria a conta e já devolve o token, então o usuário entra direto
+  cadastrar(nome: string, email: string, senha: string): Observable<Usuario> {
+    return this.iniciarSessao(
+      this.http.post<LoginResponse>(
+        `${environment.apiUrl}/auth/cadastro`,
+        { nome, email, senha }
+      )
+    );
+  }
+
+  private iniciarSessao(resposta: Observable<LoginResponse>): Observable<Usuario> {
+    return resposta.pipe(
+      tap(response => {
+        sessionStorage.setItem(this.TOKEN_KEY, response.token);
+        this.user.set(response.usuario);
+      }),
+      map(response => response.usuario)
+    );
   }
 
   restore(): Observable<Usuario | null> {
