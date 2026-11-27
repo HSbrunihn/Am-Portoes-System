@@ -3,6 +3,7 @@ package com.example.amportoes.security;
 import com.example.amportoes.controller.AuthController;
 import com.example.amportoes.entity.Usuario;
 import com.example.amportoes.repository.UsuarioRepository;
+import com.example.amportoes.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -33,6 +34,9 @@ class SecurityConfigIntegrationTest {
 
     @MockitoBean
     JwtService jwtService;
+
+    @MockitoBean
+    UsuarioService usuarioService;
 
     @Test
     void givenTokenValidoNoCabecalhoQuandoAcessaRotaProtegidaEntaoRetorna200() throws Exception {
