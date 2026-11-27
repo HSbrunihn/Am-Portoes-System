@@ -7,12 +7,12 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `
     <main>
       <section class="hero">
@@ -65,157 +65,14 @@ import { AuthService } from '../../services/auth.service';
             {{ loading() ? 'Entrando…' : 'Entrar' }}
           </button>
 
+          <p class="alternar">Ainda não tem conta? <a routerLink="/cadastro">Criar conta</a></p>
+
           <footer>AM Portões • Sistema de gestão</footer>
         </form>
       </section>
     </main>
   `,
-  styles: [`
-    main {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1.05fr 1fr;
-    }
-
-    .hero {
-      background: linear-gradient(145deg, #0e2941, #1a4b6d);
-      color: #fff;
-      display: flex;
-      align-items: end;
-      padding: 10%;
-      position: relative;
-    }
-
-    .hero:after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 70% 20%, #f68b1f33, transparent 35%);
-    }
-
-    .hero div {
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero b {
-      display: grid;
-      place-items: center;
-      width: 64px;
-      height: 64px;
-      background: #f68b1f;
-      border-radius: 17px;
-      font-size: 22px;
-    }
-
-    .hero h1 {
-      font-size: 46px;
-      max-width: 500px;
-      margin: 28px 0 12px;
-    }
-
-    .hero p {
-      color: #c6d6e1;
-    }
-
-    .area {
-      display: grid;
-      place-items: center;
-      background: #f7f9fa;
-      padding: 25px;
-    }
-
-    form {
-      width: min(410px, 100%);
-      background: #fff;
-      padding: 38px;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px #16364f18;
-    }
-
-    form > span {
-      font-size: 11px;
-      color: #ef7d17;
-      font-weight: 800;
-      letter-spacing: 1.4px;
-    }
-
-    h2 {
-      font-size: 32px;
-      color: #183b56;
-      margin: 8px 0;
-    }
-
-    form > p {
-      color: #718391;
-      margin-bottom: 28px;
-    }
-
-    label {
-      display: block;
-      margin: 17px 0;
-      color: #344f63;
-      font-weight: 700;
-      font-size: 13px;
-    }
-
-    input {
-      display: block;
-      width: 100%;
-      box-sizing: border-box;
-      margin-top: 7px;
-      padding: 12px;
-      border: 1px solid #cad5dc;
-      border-radius: 8px;
-    }
-
-    small {
-      color: #b42318;
-    }
-
-    button {
-      width: 100%;
-      padding: 13px;
-      margin-top: 8px;
-      border: 0;
-      border-radius: 8px;
-      background: #ef7d17;
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .alert {
-      padding: 12px;
-      background: #fff0ef;
-      color: #a22c25;
-      border-radius: 8px;
-    }
-
-    footer {
-      text-align: center;
-      color: #91a0ab;
-      font-size: 11px;
-      margin-top: 25px;
-    }
-
-    @media (max-width: 760px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-
-      .hero {
-        display: none;
-      }
-
-      .area {
-        min-height: 100vh;
-      }
-
-      form {
-        padding: 28px;
-      }
-    }
-  `]
+  styleUrl: './login.scss'
 })
 
 export class LoginPage {
