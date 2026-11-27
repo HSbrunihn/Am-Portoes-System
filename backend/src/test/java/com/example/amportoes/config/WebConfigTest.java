@@ -12,6 +12,8 @@ import static org.mockito.Mockito.*;
 
 class WebConfigTest {
 
+    private static final String EMAIL = "admin@amportoes.com.br";
+
     private final WebConfig webConfig = new WebConfig();
 
     @Test
@@ -20,11 +22,11 @@ class WebConfigTest {
         UsuarioRepository usuarios = mock(UsuarioRepository.class);
         PasswordEncoder encoder = mock(PasswordEncoder.class);
 
-        when(usuarios.existsByEmailIgnoreCase("admin@amportoes.com.br"))
-                .thenReturn(false);
-        when(encoder.encode("Admin@123")).thenReturn("senha-criptografada");
+        when(usuarios.existsByEmailIgnoreCase(EMAIL)).thenReturn(false);
+        when(encoder.encode("SenhaDeTeste1")).thenReturn("senha-criptografada");
 
-        CommandLineRunner runner = webConfig.administradorInicial(usuarios, encoder);
+        CommandLineRunner runner =
+                webConfig.administradorInicial(usuarios, encoder, EMAIL, "SenhaDeTeste1");
 
         // When
         runner.run();
@@ -32,10 +34,9 @@ class WebConfigTest {
         // Then
         verify(usuarios).save(argThat(usuario ->
                 "Administrador".equals(usuario.getNome())
-                        && "admin@amportoes.com.br".equals(usuario.getEmail())
+                        && EMAIL.equals(usuario.getEmail())
                         && "senha-criptografada".equals(usuario.getSenha())
         ));
-        verify(encoder).encode("Admin@123");
     }
 
     @Test
@@ -44,10 +45,10 @@ class WebConfigTest {
         UsuarioRepository usuarios = mock(UsuarioRepository.class);
         PasswordEncoder encoder = mock(PasswordEncoder.class);
 
-        when(usuarios.existsByEmailIgnoreCase("admin@amportoes.com.br"))
-                .thenReturn(true);
+        when(usuarios.existsByEmailIgnoreCase(EMAIL)).thenReturn(true);
 
-        CommandLineRunner runner = webConfig.administradorInicial(usuarios, encoder);
+        CommandLineRunner runner =
+                webConfig.administradorInicial(usuarios, encoder, EMAIL, "SenhaDeTeste1");
 
         // When
         runner.run();
@@ -55,6 +56,22 @@ class WebConfigTest {
         // Then
         verify(usuarios, never()).save(any(Usuario.class));
         verifyNoInteractions(encoder);
+    }
+
+    @Test
+    void naoDeveCriarAdministradorQuandoSenhaNaoFoiDefinida() throws Exception {
+        // Given
+        UsuarioRepository usuarios = mock(UsuarioRepository.class);
+        PasswordEncoder encoder = mock(PasswordEncoder.class);
+
+        CommandLineRunner runner =
+                webConfig.administradorInicial(usuarios, encoder, EMAIL, "");
+
+        // When
+        runner.run();
+
+        // Then
+        verifyNoInteractions(usuarios, encoder);
     }
 
     @Test
