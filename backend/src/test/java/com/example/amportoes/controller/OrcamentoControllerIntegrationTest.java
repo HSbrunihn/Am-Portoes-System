@@ -5,6 +5,11 @@ import com.example.amportoes.controller.response.OrcamentoResponse;
 import com.example.amportoes.entity.StatusTarefa;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.repository.UsuarioRepository;
+import com.example.amportoes.security.ErroSegurancaHandler;
+import com.example.amportoes.security.JwtService;
+import com.example.amportoes.security.SecurityConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import com.example.amportoes.service.OrcamentoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +27,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(OrcamentoController.class)
+@Import({SecurityConfig.class, ErroSegurancaHandler.class})
+@WithMockUser
 class OrcamentoControllerIntegrationTest {
 
     @Autowired
@@ -32,6 +39,9 @@ class OrcamentoControllerIntegrationTest {
 
     @MockitoBean
     UsuarioRepository usuarioRepository;
+
+    @MockitoBean
+    JwtService jwtService;
 
     private OrcamentoResponse resposta(Long id, String titulo) {
         return new OrcamentoResponse(

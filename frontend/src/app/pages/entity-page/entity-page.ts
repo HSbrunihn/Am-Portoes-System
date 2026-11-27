@@ -88,12 +88,15 @@ export class EntityPage implements OnInit, OnDestroy {
 
   readonly items = signal<ApiEntity[]>([]);
   readonly loading = signal(true);
+  readonly loadFailed = signal(false);
   readonly saving = signal(false);
   readonly error = signal('');
+  readonly formError = signal('');
   readonly feedback = signal('');
   readonly search = signal('');
   readonly modal = signal(false);
   readonly detail = signal<ApiEntity | null>(null);
+  readonly detailLoading = signal(false);
   /** Filtro de status (só tarefas/orçamentos) */
   readonly statusFilter = signal<StatusTarefa | ''>('');
 
@@ -138,14 +141,16 @@ export class EntityPage implements OnInit, OnDestroy {
 
   load(): void {
     this.loading.set(true);
+    this.loadFailed.set(false);
     this.error.set('');
     this.api.list(this.resource).subscribe({
       next: (v) => {
         this.items.set(v);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Não foi possível carregar os dados. Verifique a conexão com a API.');
+      error: (e: HttpErrorResponse) => {
+        this.error.set(this.errorMessage(e, 'Não foi possível carregar os dados. Verifique a conexão com a API.'));
+        this.loadFailed.set(true);
         this.loading.set(false);
       },
     });
@@ -174,12 +179,15 @@ export class EntityPage implements OnInit, OnDestroy {
   }
 
   newItem(): void {
+    if (this.saving()) return;
     this.editingId = null;
     this.form.reset();
+    this.formError.set('');
     this.modal.set(true);
   }
 
   edit(item: ApiEntity): void {
+    if (this.saving()) return;
     this.editingId = item.id;
     const values: Record<string, string | number | null> = {};
     for (const f of this.fields) {
@@ -187,23 +195,37 @@ export class EntityPage implements OnInit, OnDestroy {
       if (f.key === 'senha') values[f.key] = '';
     }
     this.form.reset(values);
+    this.formError.set('');
     this.modal.set(true);
   }
 
   view(id: number): void {
+    this.detail.set(null);
+    this.detailLoading.set(true);
+    this.error.set('');
     this.api.get(this.resource, id).subscribe({
-      next: (v) => this.detail.set(v),
-      error: () => this.error.set('Não foi possível consultar o registro.'),
+      next: (v) => {
+        this.detail.set(v);
+        this.detailLoading.set(false);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.detailLoading.set(false);
+        this.error.set(this.errorMessage(e, 'Não foi possível consultar o registro.'));
+      },
     });
   }
 
   save(): void {
+    if (this.saving()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     this.saving.set(true);
     this.error.set('');
+    this.formError.set('');
+    this.feedback.set('');
+    const creating = this.editingId === null;
     const v = this.form.getRawValue() as Record<string, string | number | null>;
 
     let payload: TarefaRequest | OrcamentoRequest | ProdutoRequest | UsuarioRequest;
@@ -254,7 +276,7 @@ export class EntityPage implements OnInit, OnDestroy {
         this.saving.set(false);
         this.modal.set(false);
         this.feedback.set(
-          this.editingId === null
+          creating
             ? 'Registro criado com sucesso.'
             : 'Registro atualizado com sucesso.',
         );
@@ -262,9 +284,15 @@ export class EntityPage implements OnInit, OnDestroy {
       },
       error: (e: HttpErrorResponse) => {
         this.saving.set(false);
-        this.error.set(this.errorMessage(e));
+        this.formError.set(this.errorMessage(e));
       },
     });
+  }
+
+  closeForm(): void {
+    if (this.saving()) return;
+    this.modal.set(false);
+    this.formError.set('');
   }
 
   remove(item: ApiEntity): void {
@@ -274,7 +302,7 @@ export class EntityPage implements OnInit, OnDestroy {
         this.feedback.set('Registro excluído com sucesso.');
         this.load();
       },
-      error: () => this.error.set('Não foi possível excluir o registro.'),
+      error: (e: HttpErrorResponse) => this.error.set(this.errorMessage(e, 'Não foi possível excluir o registro.')),
     });
   }
 
@@ -286,7 +314,7 @@ export class EntityPage implements OnInit, OnDestroy {
         this.feedback.set('Status atualizado.');
         this.load();
       },
-      error: () => this.error.set('Não foi possível atualizar o status.'),
+      error: (e: HttpErrorResponse) => this.error.set(this.errorMessage(e, 'Não foi possível atualizar o status.')),
     });
   }
 
@@ -301,6 +329,10 @@ export class EntityPage implements OnInit, OnDestroy {
     if (key === 'preco' || key === 'valor') {
       return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
+    if (key.toLowerCase().startsWith('data') && typeof v === 'string') {
+      const date = new Date(`${v}T12:00:00`);
+      return Number.isNaN(date.getTime()) ? v : date.toLocaleDateString('pt-BR');
+    }
     return String(v);
   }
 
@@ -311,9 +343,11 @@ export class EntityPage implements OnInit, OnDestroy {
       .replace('CONCLUIDA', 'Concluída');
   }
 
-  private errorMessage(e: HttpErrorResponse): string {
+  // 403/404/409/500 chegam com "mensagem" do back-end; 0 e 502-504 = API fora do ar (401 o interceptor trata)
+  private errorMessage(e: HttpErrorResponse, fallback = 'Não foi possível salvar. Revise os dados e tente novamente.'): string {
+    if (e.status === 0 || e.status >= 502) return 'Sem conexão com a API. Tente novamente em instantes.';
     const body = e.error as ApiError | undefined;
     if (body?.campos) return Object.values(body.campos).join(' ');
-    return body?.mensagem ?? 'Não foi possível salvar. Revise os dados e tente novamente.';
+    return body?.mensagem ?? fallback;
   }
 }

@@ -3,6 +3,7 @@ package com.example.amportoes.service;
 import com.example.amportoes.controller.request.UsuarioRequest;
 import com.example.amportoes.controller.response.UsuarioResponse;
 import com.example.amportoes.entity.Usuario;
+import com.example.amportoes.exception.ConflitoException;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ import java.util.List;
 @Service
 public class UsuarioService {
 
+    private static final String MENSAGEM_EMAIL_DUPLICADO = "Já existe um usuário com este e-mail";
+
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -22,6 +25,10 @@ public class UsuarioService {
     }
 
     public UsuarioResponse criar(UsuarioRequest request) {
+        if (usuarioRepository.existsByEmailIgnoreCase(request.email())) {
+            throw new ConflitoException(MENSAGEM_EMAIL_DUPLICADO);
+        }
+
         Usuario usuario = request.toEntity();
         usuario.setSenha(passwordEncoder.encode(request.senha()));
         Usuario salvo = usuarioRepository.save(usuario);
@@ -45,6 +52,13 @@ public class UsuarioService {
 
     public UsuarioResponse atualizar(Long id, UsuarioRequest request) {
         Usuario usuario = buscarEntidadePorId(id);
+
+        // O e-mail pode ser o do próprio usuário, mas não o de outro
+        usuarioRepository.findByEmailIgnoreCase(request.email())
+                .filter(outro -> !outro.getId().equals(id))
+                .ifPresent(outro -> {
+                    throw new ConflitoException(MENSAGEM_EMAIL_DUPLICADO);
+                });
 
         usuario.setNome(request.nome());
         usuario.setEmail(request.email());
