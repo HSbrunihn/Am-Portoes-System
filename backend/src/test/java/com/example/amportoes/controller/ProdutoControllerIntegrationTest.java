@@ -44,7 +44,7 @@ class ProdutoControllerIntegrationTest {
 
     private ProdutoResponse resposta(Long id, String nome) {
         return new ProdutoResponse(
-                id, 12L, nome, new BigDecimal("1200.00"), 4, 2, null
+                id, 12L, nome, null, new BigDecimal("1200.00"), 4, 2, null
         );
     }
 
