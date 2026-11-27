@@ -148,8 +148,8 @@ export class EntityPage implements OnInit, OnDestroy {
         this.items.set(v);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Não foi possível carregar os dados. Verifique a conexão com a API.');
+      error: (e: HttpErrorResponse) => {
+        this.error.set(this.errorMessage(e, 'Não foi possível carregar os dados. Verifique a conexão com a API.'));
         this.loadFailed.set(true);
         this.loading.set(false);
       },
@@ -208,9 +208,9 @@ export class EntityPage implements OnInit, OnDestroy {
         this.detail.set(v);
         this.detailLoading.set(false);
       },
-      error: () => {
+      error: (e: HttpErrorResponse) => {
         this.detailLoading.set(false);
-        this.error.set('Não foi possível consultar o registro.');
+        this.error.set(this.errorMessage(e, 'Não foi possível consultar o registro.'));
       },
     });
   }
@@ -302,7 +302,7 @@ export class EntityPage implements OnInit, OnDestroy {
         this.feedback.set('Registro excluído com sucesso.');
         this.load();
       },
-      error: () => this.error.set('Não foi possível excluir o registro.'),
+      error: (e: HttpErrorResponse) => this.error.set(this.errorMessage(e, 'Não foi possível excluir o registro.')),
     });
   }
 
@@ -314,7 +314,7 @@ export class EntityPage implements OnInit, OnDestroy {
         this.feedback.set('Status atualizado.');
         this.load();
       },
-      error: () => this.error.set('Não foi possível atualizar o status.'),
+      error: (e: HttpErrorResponse) => this.error.set(this.errorMessage(e, 'Não foi possível atualizar o status.')),
     });
   }
 
@@ -343,9 +343,11 @@ export class EntityPage implements OnInit, OnDestroy {
       .replace('CONCLUIDA', 'Concluída');
   }
 
-  private errorMessage(e: HttpErrorResponse): string {
+  // 403/404/409/500 chegam com "mensagem" do back-end; 0 e 502-504 = API fora do ar (401 o interceptor trata)
+  private errorMessage(e: HttpErrorResponse, fallback = 'Não foi possível salvar. Revise os dados e tente novamente.'): string {
+    if (e.status === 0 || e.status >= 502) return 'Sem conexão com a API. Tente novamente em instantes.';
     const body = e.error as ApiError | undefined;
     if (body?.campos) return Object.values(body.campos).join(' ');
-    return body?.mensagem ?? 'Não foi possível salvar. Revise os dados e tente novamente.';
+    return body?.mensagem ?? fallback;
   }
 }
