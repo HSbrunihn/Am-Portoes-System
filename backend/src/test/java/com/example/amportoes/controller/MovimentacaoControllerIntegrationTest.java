@@ -5,6 +5,11 @@ import com.example.amportoes.entity.TipoMovimentacao;
 import com.example.amportoes.exception.RecursoNaoEncontradoException;
 import com.example.amportoes.exception.RegraNegocioException;
 import com.example.amportoes.repository.UsuarioRepository;
+import com.example.amportoes.security.ErroSegurancaHandler;
+import com.example.amportoes.security.JwtService;
+import com.example.amportoes.security.SecurityConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import com.example.amportoes.service.MovimentacaoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +26,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MovimentacaoController.class)
+@Import({SecurityConfig.class, ErroSegurancaHandler.class})
+@WithMockUser
 class MovimentacaoControllerIntegrationTest {
 
     @Autowired
@@ -31,6 +38,9 @@ class MovimentacaoControllerIntegrationTest {
 
     @MockitoBean
     UsuarioRepository usuarioRepository;
+
+    @MockitoBean
+    JwtService jwtService;
 
     @Test
     void givenMovimentacaoValidaQuandoRegistraEntaoRetorna201ComDadosDoService() throws Exception {

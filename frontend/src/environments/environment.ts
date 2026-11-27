@@ -1,5 +1,5 @@
+
 export const environment = {
   apiUrl: '/api',
-
-  mockAuth: true,
+  mockAuth: false,
 } as const;
