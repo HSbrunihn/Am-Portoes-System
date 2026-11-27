@@ -1,6 +1,5 @@
-export const environment = {
-  // Configure a URL de produção antes de gerar o build de produção.
-  apiUrl: 'API_URL_DE_PRODUCAO',
 
-  mockAuth: true,
+export const environment = {
+  apiUrl: '/api',
+  mockAuth: false,
 } as const;
