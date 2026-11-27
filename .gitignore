@@ -31,3 +31,6 @@ erro-inicializacao.txt
 
 # Backups locais
 frontend/package-lock.backup.json
+
+# Chaves SSH da EC2
+*.pem
