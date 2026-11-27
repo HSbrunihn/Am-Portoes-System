@@ -70,9 +70,11 @@ curl -s $API/auth/me -H "Authorization: Bearer $TOKEN"                     # 200
 curl -s -o /dev/null -w '%{http_code}\n' $API/produtos                      # 401: sem token
 curl -s -X POST $API/usuarios -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"nome":"Ana","email":"ana@teste.com","senha":"segredo1"}'            # 201 (repetir => 409 e-mail duplicado)
+curl -s -X POST $API/auth/cadastro -H 'Content-Type: application/json' \
+  -d '{"nome":"Bia","email":"bia@teste.com","senha":"segredo1"}'            # 201 + token: cadastro público, sem login
 ```
 
-No navegador: cadastrar produto → **Movimentações** → entrada de 10, saída de 3 (o estoque do produto muda) → saída maior que o estoque (mensagem "Estoque insuficiente para saída"). No banco, a senha nunca aparece em texto puro:
+No navegador: na tela de login, **Criar conta** → preencher nome, e-mail e senha → entra direto no dashboard (e-mail repetido mostra "Já existe um usuário com este e-mail"). Depois: cadastrar produto → **Movimentações** → entrada de 10, saída de 3 (o estoque do produto muda) → saída maior que o estoque (mensagem "Estoque insuficiente para saída"). No banco, a senha nunca aparece em texto puro:
 `sudo -u postgres psql am_portoes -c "select email, left(senha, 7) from usuario"` → `$2a$10$` (hash BCrypt, irreversível).
 
 ## Segurança
