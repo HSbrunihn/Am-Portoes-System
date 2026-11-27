@@ -14,7 +14,7 @@ function isApiRequest(url: string): boolean {
 }
 
 function isAuthRequest(url: string): boolean {
-  return /\/auth\/(?:login|me|logout)(?:\?|$)/.test(url);
+  return /\/auth\/(?:login|cadastro|me|logout)(?:\?|$)/.test(url);
 }
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
