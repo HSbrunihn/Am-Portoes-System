@@ -1,10 +1,14 @@
 package com.example.amportoes.controller;
 
+import com.example.amportoes.controller.request.UsuarioRequest;
+import com.example.amportoes.controller.response.UsuarioResponse;
 import com.example.amportoes.entity.Usuario;
+import com.example.amportoes.exception.ConflitoException;
 import com.example.amportoes.repository.UsuarioRepository;
 import com.example.amportoes.security.ErroSegurancaHandler;
 import com.example.amportoes.security.JwtService;
 import com.example.amportoes.security.SecurityConfig;
+import com.example.amportoes.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -36,6 +40,58 @@ class AuthControllerIntegrationTest {
 
     @MockitoBean
     JwtService jwtService;
+
+    @MockitoBean
+    UsuarioService usuarioService;
+
+    @Test
+    void givenDadosValidosSemTokenQuandoSeCadastraEntaoRetorna201ComTokenEUsuarioSemSenha() throws Exception {
+        // Given
+        UsuarioRequest request = new UsuarioRequest("Ana", "ana@example.com", "senha123");
+        when(usuarioService.criar(request))
+                .thenReturn(new UsuarioResponse(5L, "Ana", "ana@example.com"));
+        when(jwtService.gerarToken("ana@example.com")).thenReturn("token-novo");
+        when(jwtService.expiracaoSegundos()).thenReturn(3600L);
+
+        // When / Then
+        mockMvc.perform(post("/api/auth/cadastro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"email\":\"ana@example.com\",\"senha\":\"senha123\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.token").value("token-novo"))
+                .andExpect(jsonPath("$.tipo").value("Bearer"))
+                .andExpect(jsonPath("$.usuario.id").value(5))
+                .andExpect(jsonPath("$.usuario.email").value("ana@example.com"))
+                .andExpect(jsonPath("$.usuario.senha").doesNotExist());
+    }
+
+    @Test
+    void givenEmailJaCadastradoQuandoSeCadastraEntaoRetorna409SemGerarToken() throws Exception {
+        // Given
+        when(usuarioService.criar(any(UsuarioRequest.class)))
+                .thenThrow(new ConflitoException("Já existe um usuário com este e-mail"));
+
+        // When / Then
+        mockMvc.perform(post("/api/auth/cadastro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"email\":\"ana@example.com\",\"senha\":\"senha123\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensagem").value("Já existe um usuário com este e-mail"));
+
+        verify(jwtService, never()).gerarToken(anyString());
+    }
+
+    @Test
+    void givenSenhaCurtaQuandoSeCadastraEntaoRetorna400SemCriarUsuario() throws Exception {
+        // When / Then
+        mockMvc.perform(post("/api/auth/cadastro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"email\":\"ana@example.com\",\"senha\":\"123\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.senha").exists());
+
+        verifyNoInteractions(usuarioService, jwtService);
+    }
 
     @Test
     void givenCredenciaisValidasQuandoFazLoginEntaoRetornaTokenEUsuarioSemSenha() throws Exception {
